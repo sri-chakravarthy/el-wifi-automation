@@ -1,10 +1,9 @@
-ARG PYSEVONE_TAG=v1.2.6
 ARG OPENJDK_VERSION=8
 ARG PYTHON_VERSION=3.11.3
 ARG APP_USER_USERNAME=ingestion
 ARG APP_USER_ID=7001
 ARG DOCKER_MIRROR_PYTHON="docker-mirror.s1artrtp1.s1.devit.ibm.com/library/python:${PYTHON_VERSION}-alpine"
-ARG DOCKER_MIRROR_PYSEVONE="docker-mirror.s1artrtp1.s1.devit.ibm.com/pysevone-base:${PYSEVONE_TAG}"
+#ARG DOCKER_MIRROR_PYSEVONE="docker-mirror.s1artrtp1.s1.devit.ibm.com/pysevone-base:${PYSEVONE_TAG}"
 ARG CONTAINER_REGISTRY="docker.sevone.com"
 #FROM ${DOCKER_MIRROR_PYSEVONE} as PYSEVONE_TAGGED
 FROM ${DOCKER_MIRROR_PYTHON}
@@ -14,47 +13,30 @@ ARG APP_USER_ID=7001
 ENV APP_USER_USERNAME ${APP_USER_USERNAME}
 ENV APP_USER_ID ${APP_USER_ID}
 
-ENV SEVONE_TRANSPORT api
-ENV SEVONE_API_HOST 127.0.0.1
-#ENV SEVONE_API_TOKEN
-#ENV SEVONE_API_USER SevOneStats
-#ENV SEVONE_API_PASSWORD n3v3rd13
-ENV SEVONE_API_COLLECTION_VERSION v3
-ENV SEVONE_API_COLLECTION_PORT 443
-ENV SEVONE_API_CONFIG_VERSION v2
-ENV SEVONE_API_CONFIG_PORT 443
-ENV SEVONE_API_SECURITY True
-ENV SEVONE_SELFMON_NAME device-snmp-text-collector
+ENV SEVONE_SELFMON_NAME el-di-selfmon
 ENV PYTHONWARNINGS "ignore:Unverified HTTPS request"
 ENV LOG_LEVEL info
 
-#COPY --from=PYSEVONE_TAGGED /opt/pysevone /opt/pysevone
-COPY ./requirements.txt /opt/app/requirements.txt
-COPY deploy/supervisord.conf /etc/supervisord.conf
-COPY deploy/supervisord.d/*.ini /etc/supervisord.d/
+
+COPY ./requirements.txt /app/requirements.txt
+
 #Newly added files
-COPY ./etc/* /opt/app/etc/
-COPY ./env/* /opt/app/env/
-COPY ./src/* /opt/app/src/
+COPY ./etc/* /app/etc/
+COPY ./env/* /app/env/
+COPY ./src/* /app/src/
+
+
 
 
 RUN apk --no-cache add curl && \
     mkdir -p /var/log/app && \
-    mkdir -p /var/supervisor && \
-    mkdir -p /opt/app/log && \
-    pip install supervisor && \
-    pip install -r /opt/app/requirements.txt && \
+    mkdir -p /app/log && \
+    mkdir -p /app/.ssh && \
+    pip install -r /app/requirements.txt && \
     addgroup -g ${APP_USER_ID} ingestion && \
     adduser -D -u ${APP_USER_ID} -G ${APP_USER_USERNAME} -H -s /sbin/nologin ${APP_USER_USERNAME} && \
     addgroup ${APP_USER_USERNAME} wheel && \
-    chown -R ${APP_USER_USERNAME}:${APP_USER_USERNAME} /opt/adapter /var/log/app /var/supervisor && \
-    chmod -R 777 /var/supervisor && \
-    chmod -R 777 /opt/app/log && \
-    curl -SsL https://github.com/boxboat/fixuid/releases/download/v0.6.0/fixuid-0.6.0-linux-amd64.tar.gz | tar -C /usr/local/bin -xzf - && \
-    chown root:root /usr/local/bin/fixuid && \
-    chmod 4755 /usr/local/bin/fixuid && \
-    mkdir -p /etc/fixuid && \
-    printf "user: ${APP_USER_USERNAME}\ngroup: ${APP_USER_USERNAME}\n" > /etc/fixuid/config.yml
+    chown -R ${APP_USER_USERNAME}:${APP_USER_USERNAME} /app /var/log/app  && \
+    chmod -R 777 /app/log 
 
-ENTRYPOINT ["/bin/sh", "-c" , "/usr/local/bin/fixuid -q && /usr/local/bin/supervisord"]
-CMD ["-c", "/etc/supervisord.conf"]
+CMD ["python3", "/app/src/main.py"]

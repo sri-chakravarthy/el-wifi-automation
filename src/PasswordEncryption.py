@@ -1,5 +1,4 @@
 import json
-
 import os
 from cryptography.fernet import Fernet
 from logger_config import logger
@@ -15,7 +14,6 @@ def EncryptPassword(password,key):
     else:
         return password
         
-
 
 def DecryptPassword(password,key):
     cipher_suite = Fernet(key)
@@ -52,11 +50,25 @@ def EncryptConfigurationFile(config_file,keyFile,passwordKey,passwordKeyType="Di
                 Pwd = appList[i]["Password"]
                 encryptedPwd = EncryptPassword(Pwd,key)
                 config[passwordKey][i]["Password"] = encryptedPwd
+                try:
+                    pwd2=appList[i]["sshPassword"]
+                    encryptedPwd2 = EncryptPassword(pwd2,key)
+                    config[passwordKey][i]["sshPassword"] = encryptedPwd2
+                except KeyError:
+                    logger.debug(f"No sshPassword to encrypt for {passwordKey}")
+                
+                
     elif passwordKeyType == "Dict":
         appDict = config[passwordKey]              
         Pwd = appDict["Password"]
         encryptedPwd = EncryptPassword(Pwd,key)
         config[passwordKey]["Password"] = encryptedPwd
+        try:
+            pwd2=appList[i]["sshPassword"]
+            encryptedPwd2 = EncryptPassword(pwd2,key)
+            config[passwordKey][i]["sshPassword"] = encryptedPwd2
+        except KeyError:
+            logger.debug(f"No sshPassword to encrypt for {passwordKey}")
     else:
         logger.error("Unknown PasswordKeyType. Please provide either List or Dict")
     

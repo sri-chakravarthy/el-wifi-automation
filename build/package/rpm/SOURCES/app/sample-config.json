@@ -1,0 +1,20 @@
+{
+    "ApplianceDetails": [
+        {
+            "IPAddress": "",
+            "UserName": "",
+            "Password": "",
+            "Type": "NMS"
+        }
+    ],
+    "IndicatorDetails": {
+        "DeviceGroupPath": "All Device Groups",
+        "SourcePluginName": "",
+        "SourceObjectType": "",
+        "SourceIndicatorName": "",
+        "TargetPluginName": "",
+        "TargetObjectType": "",
+        "TargetIndicatorName": "",
+        "FinalMaxValueConversionUnits": ""
+    }
+}

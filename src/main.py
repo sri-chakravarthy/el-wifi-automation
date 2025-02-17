@@ -1,243 +1,381 @@
-
+import requests
 from logger_config import logger
 from PasswordEncryption import *
 import traceback
-from SevOneAppliance import *
-
+import os
+import os.path
+import base64
 import time
 import sys
+from SevOneAppliance import *
 
 
 
-def check_automation_to_execute(AutomationName,interval,LastExecutionTime):
-    cur_time = int(time.time())
-    if (LastExecutionTime+interval) <= cur_time:
-        logger.debug("Automation '"+ AutomationName + "' has elapsed its configured interval. Running it now.")
-        return 0
+
+###### Makes the script to sleep based on the interval ######
+def go_to_sleep(loop_start, loop_finish,loop_count,interval):
+        
+    if interval == 0:
+        logger.info("Finished Collection (loop " + str(loop_count)+") in " + str(
+            (int(loop_finish) - int(loop_start))) + " seconds... No new loop will run since POLLING_INTERVAL or --interval was set to 0. Exiting...")
+        return False
     else:
-        time_to_sleep = int((LastExecutionTime+interval)-cur_time)
-        logger.debug("Automation '"+ AutomationName + "' has not elapsed its configured interval.Remaining time: " + str(time_to_sleep))
-        return time_to_sleep
+        loop_sleep = (int(interval) -
+                    (int(loop_finish) - int(loop_start)))
+        if (loop_sleep > 0):
+            logger.info("Finished Collection (loop " + str(loop_count)+") in " + str(
+                (int(loop_finish) - int(loop_start))) + " seconds... New loop in "+str(int(interval) - int(int(loop_finish) - int(loop_start)))+" seconds...")
+            time.sleep(float(loop_sleep))
+            return True
+        else:
+            logger.warning("Finished Collection (loop " + str(loop_count)+") in " + str(
+                (int(loop_finish) - int(loop_start))) + " seconds... Interval Time (" + str(interval) + " seconds) exceeded!! Starting new loop immediately...")
+            return True
 
 
+
+def encode_credentials(username, password):
+    credentials = f"{username}:{password}"
+    credentials_bytes = credentials.encode('ascii')
+    encoded_credentials_bytes = base64.b64encode(credentials_bytes)
+    encoded_credentials = encoded_credentials_bytes.decode('ascii')
+    return encoded_credentials
+
+
+
+def make_api_call(ipAddress,api_url, method,token, data="",insecure=False):
+    try:
+        # Set up the headers with the authentication token
+        headers = {
+            "Content-Type": "application/json",
+            'Accept': 'application/json',
+            'Authorization': f'Basic {token}'
+        }
+        # Set up the verify parameter based on the 'insecure' flag
+        verify = False if insecure else True
+        url = "https://" + ipAddress + api_url
+
+        logger.debug("Making API call")
+        logger.debug("URL: " + url + ", Method: " + method + ", data: ")
+        input_data = json.dumps(data)
+        logger.debug(input_data)
+        
+        # Make the API call with the headers and SSL certificate verification option
+        if method == "GET":
+            response = requests.get(url, headers=headers, verify=verify)
+        elif method == "POST" :
+            if input_data == "":
+                response = requests.post(url, headers=headers, verify=verify)
+            else:
+                response = requests.post(url, headers=headers, verify=verify,data=input_data)
+        else:
+            logger.debug("Unknown http request method passed")
+        # Check if the request was successful (status code 200)
+        if response.status_code == 200:
+
+            logger.debug(f"API Call successful")
+            
+        else:
+            # Print an error message if the request was not successful
+            logger.error(f"Error: Unable to fetch data. Status code: {response.status_code}")
+        return response
+    except Exception as e:
+        # Handle exceptions, such as network errors
+        logger.error(f"An error occurred: {e}")
+        return None
+
+
+# Get data for each metrics
+
+def get_data_from_metrics(ipAddress,token,query):
+    method = "POST"
+    api_url = "/prometheus/api/v1/query?query="+ str(query)
+    
+    response_data = make_api_call(ipAddress,api_url,method, token,insecure=True)    
+    if response_data is not None:
+        metrics_data = json.loads(response_data.text)
+        # logger.debug(metrics_data)        
+    else:
+        metrics_data = None
+        
+
+    return metrics_data
+
+# def body_creation (objectName, objectNames):
+#     subobjectName1 = "di-asset-sweeper"
+#     subobjectName2 = "di-user-sync"
+
+#     if subobjectName1 in objectName or subobjectName2 in objectName:
+#         objectName = "-1"
+
+#     if objectName != "-1":
+#         if objectName  not in objectNames:
+
+ 
 
 if __name__ == '__main__':
-    
     try:
         loop_count = 0
         while True:
 
-
-            logger.debug('-----------------------------------------------------------------------------------------------------------');
-            #logger.debug('Starting execution of application')
-
-            configurationFile = "etc/config.json"
-            #configurationFile = "/opt/app/etc/config.json"
-            #keyFile = "/opt/app/env/key.txt"
-            keyFile = "env/key.txt"
+            logger.info('-----------------------------------------------------------------------------------------------------------');
+            logger.info('Starting execution of application')
+            loop_start = int(time.time())
+            loop_count += 1
+            logger.info("Started Collection (loop " + str(loop_count) + ")")
+            #file_prefix = "/app/"
+            
+            file_prefix = ""
+            #configurationFile = "/opt/IBM/expert-labs/el-proj-templates/etc/config.json"
+            #keyFile = "/opt/IBM/expert-labs/el-proj-templates/env/key.txt"
+            configurationFile = file_prefix + "etc/config.json"
+            keyFile = file_prefix + "env/key.txt"
             with open(keyFile,"r") as keyfile:
                 key=keyfile.read()
+            EncryptConfigurationFile(configurationFile,keyFile,"DIDetails","List")
             EncryptConfigurationFile(configurationFile,keyFile,"ApplianceDetails","List")
             with open(configurationFile, "r") as f:
                 try:
                     config = json.load(f)
                 except json.decoder.JSONDecodeError as e:
                     logger.error(f"Error loading JSON data: {e}")
-                    exit()
-            logger.debug(config)
+                    loop_finish = time.time()                
+                    # go to sleep till next poll                    
+                    if go_to_sleep(loop_start, loop_finish,loop_count,config["interval"]):
+                        continue
+                    else:
+                        break
 
-            '''
-            #sampleDataIngestFile = "/opt/app/etc/data-ingest-sample.json"
-            sampleDataIngestFile = "etc/data-ingest-sample.json"
-            with open(sampleDataIngestFile, "r") as f:
-                try:
-                    ingestData = json.load(f)
-                except json.decoder.JSONDecodeError as e:
-                    logger.error(f"Error loading JSON data: {e}")
-                    exit()
-            #logger.debug("Data to be ingested :")
-            #logger.debug(ingestData)
-            '''
-            #Check each automation configured in the configuration file
-            max_time_to_sleep = 0
-            for automationConfig in config["Automations"]:
-                loop_start = int(time.time())
-                if(loop_count==0):
-                    prev_exec_time = 0                    
-                else:
-                    prev_exec_time = automationConfig["Previous Exec Time"]
-                loop_count += 1
-                logger.info(
-                "Started automation (loop " + str(loop_count) + ")")
+            logger.info(config)
 
-                logger.debug("Automation Name: " + automationConfig["Name"])
-                logger.debug("Automation Enabled: " + automationConfig["Enabled"])
-                if(automationConfig["Enabled"]==0):
-                    logger.debug("Automation '"+ automationConfig["Name"]+ "' is disabled. Continuing with the next automation")
-                    continue
-
+            for dataInsight in config["DIDetails"]:
+                appPassword = dataInsight["Password"]["EncryptedPwd"].encode('utf-8')
+                password=DecryptPassword(appPassword,key)
+                userName = dataInsight["UserName"]
+                ipAddress = dataInsight["IPAddress"]
+                metrics = dataInsight["Metrics"]
+                objectNames = dataInsight["objectNames"]
+                deviceName = dataInsight["deviceName"]
+                body = dataInsight["body"]
                 
-
-                if(automationConfig["Name"]== "Delete Unused Devices"):
-                    
-                    time_to_sleep = check_automation_to_execute(automationConfig["Name"],automationConfig["interval"],automationConfig["Previous Exec Time"])
-                    #Get the maximum time this program can sleep before running the next automation
-                    if(time_to_sleep!=0):
-                        if(time_to_sleep < max_time_to_sleep):
-                            max_time_to_sleep = time_to_sleep                                       
-                        continue
-                    
-                    # As we are running this automation now, the max time to sleep , is the automation interval configured
-                    max_time_to_sleep = automationConfig["interval"]
-                    sevOneApp = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key))
-
-                    deviceDict = sevOneApp.get_devices_in_device_group(automationConfig["APDeviceGroupPath"])
-                    logger.debug("DeviceGroup Details")
-
-                    #To be uncommented
-                    #updatedDeviceDict = sevOneApp.get_object_count(deviceDict)
-                    #logger.debug(updatedDeviceDict)
-                    #sevOneApp.delete_unused_devices(updatedDeviceDict,"1")
-                    automationConfig["Previous Exec Time"] = loop_start
-
-                    with open(configurationFile, 'w') as file:
-                        json.dump(config, file, indent=4)
-
-                    logger.debug("Updating the configuration with current time:" + str(loop_start))
-
-                elif(automationConfig["Name"]== "WLC Pinning"):
-
-
-                    # Check if we need to run this automation based on its time interval
-                    time_to_sleep = check_automation_to_execute(automationConfig["Name"],automationConfig["interval"],automationConfig["Previous Exec Time"])
-                    #Get the maximum time this program can sleep before running the next automation
-                    if(time_to_sleep!=0):
-                        if(time_to_sleep < max_time_to_sleep):
-                            max_time_to_sleep = time_to_sleep                                       
-                        continue
-                    
-                    # As we are running this automation now, the max time to sleep , is the automation interval configured
-                    max_time_to_sleep = automationConfig["interval"]
-                    sevOneApp = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key))
-
-                    list_of_new_WLCs= sevOneApp.get_new_WLC_onboarded(automationConfig["WLC Metadata Namespace"],automationConfig["WLC Metadata Attribute"],automationConfig["WLC Metadata Value"],automationConfig["WLC Peer - Device Group Path"])
-
-                    logger.debug("List of new WLCs onboarded:")
-                    logger.debug(list_of_new_WLCs)
-
-                    #To be commented / Removed
-                    list_of_new_WLCs =["24", "25", "23"]
-
-                    #Check if the new WLCs are Cisco or Aruba
-                    list_new_wlc_details = sevOneApp.get_device_details(list_of_new_WLCs)
-                  
-
-
-                    ## Make snmp get to find total number of AP associated. If ApCount = -1, then there was an error in snmpwalk
-                    list_new_wlc_details_ap=sevOneApp.get_wlc_access_point_count(list_new_wlc_details,automationConfig["Cisco AP Count OID"],automationConfig["Aruba AP Count OID"])
-                    logger.debug("New WLC with APCount details are:")
-                    logger.debug(list_new_wlc_details_ap)
-
-                    #Check the capacity of peers which have Wifi Collectors installed
-                    peer_list = sevOneApp.get_peer_capacity(automationConfig["WLC Peer - Device Group Path"])
-                    logger.debug("Peer Capacity:")
-                    logger.debug(peer_list)
-
-                    #Get number of SSIDs of the new WLCs from Metadata
-                    wlc_ssid_list = sevOneApp.get_device_metadata_details("WLC Device","SSID_Count",list_of_new_WLCs)
-
-
-                    #Update the SSID count into the wlc_details_ap list
-                    #Create a dictionary to store deviceID-location mapping
-                    wlc_ssid_map = {d['DeviceId']: d['Metadata Value'] for d in wlc_ssid_list}
-                    # Iterate through each dictionary in list1
-                    for d in list_new_wlc_details_ap:
-                        # Check if the deviceID exists in the device_location_map
-                        if d['DeviceId'] in wlc_ssid_map:
-                            # Update the dictionary in list1 with the location from list2
-                            d.update({'SSID_Count': wlc_ssid_map[d['DeviceId']]})
-
-                    logger.debug("SSID counts of WLCs:")
-                    logger.debug(list_new_wlc_details_ap)
-
-                    #Estimate the number of Objects from the new WLCs
-                    no_of_new_wlcs = len(list_new_wlc_details_ap)
-                    total_ap_count = 0
-                    total_ssid_count = 0
-                    for wlc in list_new_wlc_details_ap:
-                        total_ssid_count += int(wlc["SSID_Count"]) 
-                        if wlc["AP_Count"] > 0:
-                            total_ap_count += wlc["AP_Count"]
-                        else:
-                            logger.debug("Unable to estimate the number of APs in WLC "+ wlc["DeviceName"] + ". Please check SNMP settings on the device or the OID string in the automation Configuration")
-                    no_of_wifi_stations = 200
-                    wifi_self_mon = 1
-                    agg_manfd_objects = no_of_new_wlcs*200
-                    no_of_wireless_stations = total_ap_count * 5
-                    estimated_no_of_objects = no_of_new_wlcs + (total_ssid_count * no_of_new_wlcs) + agg_manfd_objects + total_ap_count + no_of_wireless_stations
-
-                    logger.debug("Estimated number of objects from new WLCs:" + str(estimated_no_of_objects))
-
-
-                    #Check which peer can handle the expected object count
-                    peer_name_to_pin = ""
-                    
-                    for peer in peer_list:
-                        if (peer["Objects Available"] > estimated_no_of_objects):
-                            peer_name_to_pin = peer["Name"]
-                            peer_id_to_pin = peer["Id"]
-                    logger.debug("The new WLCs can be pinned to the Peer:" + peer_name_to_pin)
-
-                    #Get the wifi Groupname and DeviceGroupId corresponding to that particular Peer
-                    if (peer_name_to_pin is None) or (peer_name_to_pin == ""):
-                        logger.debug("No peer available with the required capacity to poll the new WLC")
-                        logger.debug("Emailing the customer : ")
-                        ## Code to email the customer
-                        continue
-                        #peer_name_to_pin = "SevOne Appliance"
-
-
-                   
-                    # Get the Peer deviceGroup path                    
-                    deviceGroupPathDict = automationConfig["WLC Peer - Device Group Path"][peer_name_to_pin]
-                    for newWLC in list_new_wlc_details_ap:
-                        if re.search("Cisco",newWLC["DeviceVendor"],re.IGNORECASE):
-                            newWLC["DeviceGroupPath"] = deviceGroupPathDict["Cisco"]
-                        elif re.search("Aruba",newWLC["DeviceVendor"],re.IGNORECASE):
-                            newWLC["DeviceGroupPath"] = deviceGroupPathDict["Aruba"]
-                        # Pin the WLCs to the deviceGroup
-                        sevOneApp.pin_device_to_device_group(newWLC["DeviceId"],newWLC["DeviceGroupPath"])
-
-                        #Update the peer for the device
-                        sevOneApp.update_peer_polling_for_device(newWLC["DeviceId"],peer_id_to_pin)
-                    
-                    logger.debug("New WLC details, updated with DeviceGroup Path to pin:")
-                    logger.debug(list_new_wlc_details_ap)
-
+            
                         
+
+
+            
+                token = encode_credentials(userName, password)        
+                logger.debug(f'token: {token}')
+                body[deviceName] = {}
+
+                logger.info(f"Fetching Metric data from Data Insight")
+                for key, value in metrics.items():
+                    objectType = key
                     
-                    # Email the customer
+                    logger.info(f"Metrics for ObjectType: {key}")
+                    for metric in value:
+                        Query = metric['query']
+                        if 'indicatorName' in metric:
+                            logger.info(f"Indicator Name in Config: {metric['indicatorName']}")
+                            indicatorName= metric['indicatorName']
+                        else:
+                            indicatorName = ""
+                        logger.debug(f"Query: {Query}")
+                        object_metrics = get_data_from_metrics (ipAddress, token, Query)
+                        
+                        logger.debug(f"ObjectType: {objectType}, Object_Metrics: {object_metrics}")
+                        for item in object_metrics["data"]["result"]:
+                            
+                            if objectType == "certificate":
+                                if item["metric"]["name"]:
+                                    objectName = item["metric"]["name"]
+                                else:
+                                    objectName = "-1"
+                            elif objectType == "pod":
+                                if item["metric"]["pod"]:
+                                    objectName = item["metric"]["pod"]
+                                else:
+                                    objectName = "-1"
+                            elif objectType == "deployment":
+                                if item["metric"]["deployment"]:
+                                    objectName = item["metric"]["deployment"]
+                                else:
+                                    objectName = "-1"
+                            elif objectType == "DiskIO":
+                                 if item["metric"]["device"]:
+                                     objectName = item["metric"]["device"]
+                                     logger.debug(f"ObjectType:{objectType}, ObjectName:{objectName}")
+                                 else:
+                                     objectName = "-1"
+                            elif objectType == "kube node":
+                                if item["metric"]["node"]:
+                                    objectName = item["metric"]["node"]
+                                else:
+                                    objectName = "-1"
+                            elif objectType == "DI User Sessions":
+                                    objectName = "DI User Sessions"
+                            elif objectType == "Containers Interface":
+                                if "pod" in item["metric"]:
+                                    objectName = f"{item['metric']['pod']}::{item['metric']['interface']}"
+                                else:
+                                    objectName = "-1"
+                            elif objectType == "Containers":
+                                if "container" in item["metric"]:
+                                    objectName = item["metric"]["container"]
+                                else:
+                                    objectName = "-1"
+                            subobjectName1 = "di-asset-sweeper"
+                            subobjectName2 = "di-user-sync"
+
+                            if subobjectName1 in objectName or subobjectName2 in objectName:
+                                objectName = "-1"
+                            
+                            if objectName != "-1":
+                                if objectName not in objectNames:
+                                    if object_metrics["data"]["result"]:
+                                        timesatampVal = item["value"][0]
+                                    else:
+                                        timesatampVal = 0
+                                    rounded_timestamp = round(timesatampVal)
+
+                                    
+                                    body[deviceName][objectName]=[
+                                        objectType, 
+                                            {
+                                            "timestamp": {
+                                                "timestamp": rounded_timestamp
+                                            }
+                                        }
+                                    ]
+                                    
+                                    objectNames.append(objectName)
+                                    #logger.debug(objectNames)
+                                    #logger.debug(body)
+
+                                if rounded_timestamp != 0:
+                                    
+                                    if indicatorName == "":
+                                        indicatorName = item["metric"]["__name__"]
+                                    
+                                    # body[deviceName][objectName][1]["timestamp"] [indicatorName] = []
+                                    body[deviceName][objectName][1]["timestamp"] [indicatorName] =[
+                                        item["value"][1],
+                                        metric["units"],
+                                        metric["type"]
+                                    ]
+
+              
+                                    #logger.debug(body)
+                                    
+                logger.info(f'The body is {body}')
+                
+                #Ingesting the metrics into SevOne Appliance
+                
+                ###### Check Master-Slave situation ######
+                
+                logger.info(f"Checking if host is PAS/HSA")
+                '''
+                
+                with open(f'{file_prefix}SevOne.masterslave.master') as f:
+                    if f.read().rstrip() == '0':
+                    
+                        logger.critical('loop:' + str(loop_count) + ' Running on Secondary appliance ... Skipping loop increase...')
+                        loop_finish = time.time()
+                        # go to sleep till next poll
+                        
+                        if go_to_sleep(loop_start, loop_finish,loop_count,config["interval"]):
+                            continue
+                        else:
+                            break
+                '''
+                
+                logger.info(f"Host is PAS. Continuing...")
+                #Print appliance details
+                #SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key))
+                keyFile = file_prefix + "env/key.txt"
+                with open(keyFile,"r") as keyfile:
+                    key=keyfile.read()
+                SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["UseSShKeys"])
+
+                for deviceName,object_dictionary in body.items():
+                
+                    object_list= []
+                    for objectName,objectDetails in object_dictionary.items(): # The ObjectNames are keys. 
+                        objectDictToBeIngested = {}
+                        objectType = objectDetails[0]
+                        timestamp = objectDetails[1]["timestamp"]["timestamp"]
+                        indicatorList = []
+                        for indicatorName, indicatorDetails in objectDetails[1]["timestamp"].items():
+                            if indicatorName == "timestamp":
+                                continue
+                            indicatorDict = {}
+                            indicatorDict = {
+                                "format":indicatorDetails[2],
+                                "name": indicatorName,
+                                "units": indicatorDetails[1],
+                                "value" : indicatorDetails[0]
+                            }
+                            indicatorList.append(indicatorDict)
+                        objectDictToBeIngested = {
+                            "automaticCreation": True,
+                            "description": "Created by DI SelfMon",
+                            "name": objectName,
+                            "pluginName": "DEFERRED",
+                            "timestamps": [
+                                {
+                                "indicators": indicatorList,
+                                "timestamp": timestamp
+                                }
+                            ],
+                            "type": objectType
+                        }
+                        object_list.append(objectDictToBeIngested)
+                    diIPAddress = dataInsight["IPAddress"]
+                    if (":" in dataInsight["IPAddress"]):
+                        diIPAddress,port = dataInsight["IPAddress"].split(":", 1)
+                    result = SevOne_appliance_obj.ingest_dev_obj_ind(deviceName, diIPAddress,object_list)
+                    if result==1:
+                        logger.error(f"Error ingesting data into SevOne.")
+                    else:
+                        logger.debug(f"Result of ingestion: {result}")
 
 
+            if config["interval"] == 0:
+                logger.info("Finished Collection (loop " + str(loop_count)+") in " + str(
+                    (int(time.time()) - int(loop_start))) + " seconds... No new loop will run since POLLING_INTERVAL or --interval was set to 0. Exiting...")
+                break
+            else:
+                loop_sleep = (int(config["interval"]) -
+                            (int(time.time()) - loop_start))
+                if (loop_sleep > 0):
+                    logger.info("Finished Collection (loop " + str(loop_count)+") in " + str(
+                        (int(time.time()) - int(loop_start))) + " seconds... New loop in "+str(int(config["interval"]) - int(int(time.time()) - int(loop_start)))+" seconds...")
+                    time.sleep(float(loop_sleep))
+                else:
+                    logger.warning("Finished Collection (loop " + str(loop_count)+") in " + str(
+                        (int(time.time()) - int(loop_start))) + " seconds... Interval Time (" + str(config["interval"]) + " seconds) exceeded!! Starting new loop immediately...")
+
+                if loop_count > 499:
+                    #Exit container. Container restarts
+                    exit(1)
+
+            del config
+            del SevOne_appliance_obj
+            del appPassword ,password, userName ,ipAddress ,metrics ,objectNames ,deviceName ,body 
+            del value,metric,Query, object_metrics,rounded_timestamp
+            del objectDictToBeIngested,indicatorDetails,indicatorDict,indicatorList
+            del body, object_dictionary,objectName,indicatorName,diIPAddress,result
+
+        # Exit with 0 for container to not restart    
+        sys.exit(0)
 
 
-                   
-
-
-
-                    automationConfig["Previous Exec Time"] = loop_start
-                    with open(configurationFile, 'w') as file:
-                        json.dump(config, file, indent=4)
-
-                    logger.debug("Updating the configuration with current time:" + str(loop_start))
-
-            logger.debug("Sleeping for "+ str(max_time_to_sleep) +" seconds.") 
-            time.sleep(max_time_to_sleep)
-
-
+            
     except Exception as e:
         tb = traceback.format_exc()
         logger.error(f"An unexpected error occurred: {tb}")
-        sys.exit(2)
+        #Exit container without restart
+        sys.exit(0)
+
+
 
 
