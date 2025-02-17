@@ -1,0 +1,43 @@
+{
+    "ApplianceDetails": [
+        {
+            "IPAddress": "9.42.110.15:15263",
+            "UserName": "admin",
+            "Password": {
+                "EncryptedPwd": "gAAAAABmH2OIpBK3x3r_1RK7CAQQ7zWoztlXRHoTAYsU8sLVMXv5pMI9fKZaP2bwfBxLncEWij0bGX6xCfDU6233s61gxLx7NQ=="
+            },
+            "Type": "NMS"
+        }
+    ],
+    "Automations": [
+        {
+            "Name": "Delete Unused Devices",
+            "Enabled": "1",
+            "APDeviceGroupPath": "All Device Groups/Wifi/APs",
+            "interval": 3600,
+            "Dryrun": 1,
+            "loggerLevel": "INFO",
+            "Previous Exec Time": 1715680921
+        },
+        {
+            "Name": "WLC Pinning",
+            "Enabled": "1",
+            "APDeviceGroupPath": "All Device Groups/Wifi/APs",
+            "WLC Metadata Namespace": "SevOne",
+            "WLC Metadata Attribute": "sysName",
+            "WLC Metadata Value": "WLC",
+            "WLC Peer - Device Group Path": {
+                "SevOne Appliance": {
+                    "Cisco": "All Device Groups/WLC_Cisco",
+                    "Aruba": "All Device Groups/WLC_Aruba"
+                }
+            },
+            "Cisco AP Count OID": "1.3.6.1.4.1.9.9.513.1.1.1.1.5",
+            "Aruba AP Count OID": " 1.3.6.1.4.1.14823.2.2.1.5.2.1.4.1.3",
+            "interval": 2000,
+            "Dryrun": 1,
+            "loggerLevel": "INFO",
+            "Previous Exec Time": 1715682284
+        }
+    ]
+}
