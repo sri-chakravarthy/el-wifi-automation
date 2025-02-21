@@ -8,6 +8,7 @@ import base64
 import time
 import sys
 from SevOneAppliance import *
+from WifiAutomations import WifiAutomations
 
 
 
@@ -132,7 +133,6 @@ if __name__ == '__main__':
             keyFile = file_prefix + "env/key.txt"
             with open(keyFile,"r") as keyfile:
                 key=keyfile.read()
-            EncryptConfigurationFile(configurationFile,keyFile,"DIDetails","List")
             EncryptConfigurationFile(configurationFile,keyFile,"ApplianceDetails","List")
             with open(configurationFile, "r") as f:
                 try:
@@ -148,196 +148,91 @@ if __name__ == '__main__':
 
             logger.info(config)
 
-            for dataInsight in config["DIDetails"]:
-                appPassword = dataInsight["Password"]["EncryptedPwd"].encode('utf-8')
-                password=DecryptPassword(appPassword,key)
-                userName = dataInsight["UserName"]
-                ipAddress = dataInsight["IPAddress"]
-                metrics = dataInsight["Metrics"]
-                objectNames = dataInsight["objectNames"]
-                deviceName = dataInsight["deviceName"]
-                body = dataInsight["body"]
+
                 
+            #Ingesting the metrics into SevOne Appliance
             
-                        
-
-
+            ###### Check Master-Slave situation ######
             
-                token = encode_credentials(userName, password)        
-                logger.debug(f'token: {token}')
-                body[deviceName] = {}
-
-                logger.info(f"Fetching Metric data from Data Insight")
-                for key, value in metrics.items():
-                    objectType = key
+            logger.info(f"Checking if host is PAS/HSA")
+            '''
+            
+            with open(f'{file_prefix}SevOne.masterslave.master') as f:
+                if f.read().rstrip() == '0':
+                
+                    logger.critical('loop:' + str(loop_count) + ' Running on Secondary appliance ... Skipping loop increase...')
+                    loop_finish = time.time()
+                    # go to sleep till next poll
                     
-                    logger.info(f"Metrics for ObjectType: {key}")
-                    for metric in value:
-                        Query = metric['query']
-                        if 'indicatorName' in metric:
-                            logger.info(f"Indicator Name in Config: {metric['indicatorName']}")
-                            indicatorName= metric['indicatorName']
-                        else:
-                            indicatorName = ""
-                        logger.debug(f"Query: {Query}")
-                        object_metrics = get_data_from_metrics (ipAddress, token, Query)
-                        
-                        logger.debug(f"ObjectType: {objectType}, Object_Metrics: {object_metrics}")
-                        for item in object_metrics["data"]["result"]:
-                            
-                            if objectType == "certificate":
-                                if item["metric"]["name"]:
-                                    objectName = item["metric"]["name"]
-                                else:
-                                    objectName = "-1"
-                            elif objectType == "pod":
-                                if item["metric"]["pod"]:
-                                    objectName = item["metric"]["pod"]
-                                else:
-                                    objectName = "-1"
-                            elif objectType == "deployment":
-                                if item["metric"]["deployment"]:
-                                    objectName = item["metric"]["deployment"]
-                                else:
-                                    objectName = "-1"
-                            elif objectType == "DiskIO":
-                                 if item["metric"]["device"]:
-                                     objectName = item["metric"]["device"]
-                                     logger.debug(f"ObjectType:{objectType}, ObjectName:{objectName}")
-                                 else:
-                                     objectName = "-1"
-                            elif objectType == "kube node":
-                                if item["metric"]["node"]:
-                                    objectName = item["metric"]["node"]
-                                else:
-                                    objectName = "-1"
-                            elif objectType == "DI User Sessions":
-                                    objectName = "DI User Sessions"
-                            elif objectType == "Containers Interface":
-                                if "pod" in item["metric"]:
-                                    objectName = f"{item['metric']['pod']}::{item['metric']['interface']}"
-                                else:
-                                    objectName = "-1"
-                            elif objectType == "Containers":
-                                if "container" in item["metric"]:
-                                    objectName = item["metric"]["container"]
-                                else:
-                                    objectName = "-1"
-                            subobjectName1 = "di-asset-sweeper"
-                            subobjectName2 = "di-user-sync"
-
-                            if subobjectName1 in objectName or subobjectName2 in objectName:
-                                objectName = "-1"
-                            
-                            if objectName != "-1":
-                                if objectName not in objectNames:
-                                    if object_metrics["data"]["result"]:
-                                        timesatampVal = item["value"][0]
-                                    else:
-                                        timesatampVal = 0
-                                    rounded_timestamp = round(timesatampVal)
-
-                                    
-                                    body[deviceName][objectName]=[
-                                        objectType, 
-                                            {
-                                            "timestamp": {
-                                                "timestamp": rounded_timestamp
-                                            }
-                                        }
-                                    ]
-                                    
-                                    objectNames.append(objectName)
-                                    #logger.debug(objectNames)
-                                    #logger.debug(body)
-
-                                if rounded_timestamp != 0:
-                                    
-                                    if indicatorName == "":
-                                        indicatorName = item["metric"]["__name__"]
-                                    
-                                    # body[deviceName][objectName][1]["timestamp"] [indicatorName] = []
-                                    body[deviceName][objectName][1]["timestamp"] [indicatorName] =[
-                                        item["value"][1],
-                                        metric["units"],
-                                        metric["type"]
-                                    ]
-
-              
-                                    #logger.debug(body)
-                                    
-                logger.info(f'The body is {body}')
-                
-                #Ingesting the metrics into SevOne Appliance
-                
-                ###### Check Master-Slave situation ######
-                
-                logger.info(f"Checking if host is PAS/HSA")
-                '''
-                
-                with open(f'{file_prefix}SevOne.masterslave.master') as f:
-                    if f.read().rstrip() == '0':
-                    
-                        logger.critical('loop:' + str(loop_count) + ' Running on Secondary appliance ... Skipping loop increase...')
-                        loop_finish = time.time()
-                        # go to sleep till next poll
-                        
-                        if go_to_sleep(loop_start, loop_finish,loop_count,config["interval"]):
-                            continue
-                        else:
-                            break
-                '''
-                
-                logger.info(f"Host is PAS. Continuing...")
-                #Print appliance details
-                #SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key))
-                keyFile = file_prefix + "env/key.txt"
-                with open(keyFile,"r") as keyfile:
-                    key=keyfile.read()
-                SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["UseSShKeys"])
-
-                for deviceName,object_dictionary in body.items():
-                
-                    object_list= []
-                    for objectName,objectDetails in object_dictionary.items(): # The ObjectNames are keys. 
-                        objectDictToBeIngested = {}
-                        objectType = objectDetails[0]
-                        timestamp = objectDetails[1]["timestamp"]["timestamp"]
-                        indicatorList = []
-                        for indicatorName, indicatorDetails in objectDetails[1]["timestamp"].items():
-                            if indicatorName == "timestamp":
-                                continue
-                            indicatorDict = {}
-                            indicatorDict = {
-                                "format":indicatorDetails[2],
-                                "name": indicatorName,
-                                "units": indicatorDetails[1],
-                                "value" : indicatorDetails[0]
-                            }
-                            indicatorList.append(indicatorDict)
-                        objectDictToBeIngested = {
-                            "automaticCreation": True,
-                            "description": "Created by DI SelfMon",
-                            "name": objectName,
-                            "pluginName": "DEFERRED",
-                            "timestamps": [
-                                {
-                                "indicators": indicatorList,
-                                "timestamp": timestamp
-                                }
-                            ],
-                            "type": objectType
-                        }
-                        object_list.append(objectDictToBeIngested)
-                    diIPAddress = dataInsight["IPAddress"]
-                    if (":" in dataInsight["IPAddress"]):
-                        diIPAddress,port = dataInsight["IPAddress"].split(":", 1)
-                    result = SevOne_appliance_obj.ingest_dev_obj_ind(deviceName, diIPAddress,object_list)
-                    if result==1:
-                        logger.error(f"Error ingesting data into SevOne.")
+                    if go_to_sleep(loop_start, loop_finish,loop_count,config["interval"]):
+                        continue
                     else:
-                        logger.debug(f"Result of ingestion: {result}")
+                        break
+            '''
+            
+            logger.info(f"Host is PAS. Continuing...")
+            #Print appliance details
+            #SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key))
+            keyFile = file_prefix + "env/key.txt"
+            with open(keyFile,"r") as keyfile:
+                key=keyfile.read()
+            SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["UseSShKeys"])
+            logger.debug(f"Automation: {config['Automation'][0]}")
+            wifi_automation = WifiAutomations()
+            for automation in config['Automation']:
+                if automation["Enabled"] != 1:
+                    logger.info(f"Automation: {automation['Name']} - is disabled. Continuing with next automation")
+                    continue
+                logger.info(f"Automation: {automation['Name']} - is Enabled.")
+                wifi_automation.AP_Availability_Count(SevOne_appliance_obj,automation)
 
+      
+            '''
+            body = {"test":{}}
+
+            # Get all device groups under a particular device
+            for deviceName,object_dictionary in body.items():
+            
+                object_list= []
+                for objectName,objectDetails in object_dictionary.items(): # The ObjectNames are keys. 
+                    objectDictToBeIngested = {}
+                    objectType = objectDetails[0]
+                    timestamp = objectDetails[1]["timestamp"]["timestamp"]
+                    indicatorList = []
+                    for indicatorName, indicatorDetails in objectDetails[1]["timestamp"].items():
+                        if indicatorName == "timestamp":
+                            continue
+                        indicatorDict = {}
+                        indicatorDict = {
+                            "format":indicatorDetails[2],
+                            "name": indicatorName,
+                            "units": indicatorDetails[1],
+                            "value" : indicatorDetails[0]
+                        }
+                        indicatorList.append(indicatorDict)
+                    objectDictToBeIngested = {
+                        "automaticCreation": True,
+                        "description": "Created by DI SelfMon",
+                        "name": objectName,
+                        "pluginName": "DEFERRED",
+                        "timestamps": [
+                            {
+                            "indicators": indicatorList,
+                            "timestamp": timestamp
+                            }
+                        ],
+                        "type": objectType
+                    }
+                    object_list.append(objectDictToBeIngested)
+                diIPAddress = dataInsight["IPAddress"]
+                if (":" in dataInsight["IPAddress"]):
+                    diIPAddress,port = dataInsight["IPAddress"].split(":", 1)
+                result = SevOne_appliance_obj.ingest_dev_obj_ind(deviceName, diIPAddress,object_list)
+                if result==1:
+                    logger.error(f"Error ingesting data into SevOne.")
+                else:
+                    logger.debug(f"Result of ingestion: {result}")
+            '''
 
             if config["interval"] == 0:
                 logger.info("Finished Collection (loop " + str(loop_count)+") in " + str(
@@ -359,11 +254,8 @@ if __name__ == '__main__':
                     exit(1)
 
             del config
-            del SevOne_appliance_obj
-            del appPassword ,password, userName ,ipAddress ,metrics ,objectNames ,deviceName ,body 
-            del value,metric,Query, object_metrics,rounded_timestamp
-            del objectDictToBeIngested,indicatorDetails,indicatorDict,indicatorList
-            del body, object_dictionary,objectName,indicatorName,diIPAddress,result
+            del SevOne_appliance_obj,wifi_automation
+
 
         # Exit with 0 for container to not restart    
         sys.exit(0)

@@ -1,144 +1,14 @@
 {
-    "DIDetails": [
-        {
-            "IPAddress": "9.42.110.15:20128",
-            "UserName": "datainsight",
-            "Password": {
-                "EncryptedPwd": "gAAAAABl-CX7lIcUN4JSFdLD_Erva6nP1kOeKj4v8A6ODLVB6b7Q2F1d0GyvhEfSmr4wQPdmU7nJs86glRn2xogBmItXQ4Zi2Q=="
-            },
-            "Type": "Prometheus",
-            "Metrics": {
-                "deployment": [
-                    {
-                        "query": "kube_deployment_spec_replicas - kube_deployment_status_replicas_available",
-                        "indicatorName": "Replicas Unavailable",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ],
-                "certificate": [
-                    {
-                        "query": "certmanager_certificate_expiration_timestamp_seconds/(3600*24*7)",
-                        "indicatorName": "Time to Expire in weeks",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ],
-                "DI User Sessions": [
-                    {
-                        "query": "{__name__=\"di_num_active_users\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_active_users_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_active_user_sessions\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_active_user_sessions_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_maps\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_maps_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_reports\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_reports_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_scheduled_reports\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_teams\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_tenants\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_users\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_users_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ],
-                "kube node": [
-                    {
-                        "query": "kube_node_status_condition{condition=\"Ready\", status=\"true\"}",
-                        "indicatorName": "node_status",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "kube_node_status_condition{condition=\"DiskPressure\", status=\"true\"}",
-                        "indicatorName": "disk_pressure",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "kube_node_status_condition{condition=\"MemoryPressure\", status=\"true\"}",
-                        "indicatorName": "memory_pressure",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "kube_node_status_allocatable{resource=\"cpu\"}",
-                        "indicatorName": "cpu cores allocatable to pods",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "count by (node) (kube_pod_status_phase{phase=\"Running\"})",
-                        "indicatorName": "Pods Running",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ]
-            },
-            "objectNames": [],
-            "body": {},
-            "deviceName": "DataInsight-vcenter"
-        }
-    ],
     "ApplianceDetails": [
         {
             "IPAddress": "c29073v1.fyre.ibm.com",
             "UserName": "admin",
             "Password": {
-                "EncryptedPwd": "gAAAAABnkPC2m4X8TGHgQvSPflI6JE34m3_qqo9-EYm8Wbrleg6QmMaQft71-SlfF1DXdT0qiUK5dYqApkgRdoohYgYJ5TMrdg=="
+                "EncryptedPwd": "gAAAAABntXDxMG47FQrqItF89-kCLw39rNdADyFW6oJgUHq4WvgoOFajsK-G7ArvvzchZ3MHjvalOnoRhufpR-6zzXtrIa7X8Q=="
             },
             "sshUserName": "root",
             "sshPassword": {
-                "EncryptedPwd": "gAAAAABnkPC2Zjt5ntYmGb4JONqZnlzKPeOEi4SaTx3EEv4BCuRVYP8QQHgoVZbIotv4xq9eqy3P7wnmcV5wyUt6CqaAtlgq2A=="
+                "EncryptedPwd": "gAAAAABntXDx843QLJW6fxaMKXspao6SjGRAFf5wQO8F0GJe2a1SV0CMrbYrAIkWSMlOz14G5kza1QHMFREEuTs9GHkFKswJTQ=="
             },
             "UseSShKeys": 1,
             "Type": "NMS"
@@ -146,5 +16,14 @@
     ],
     "interval": 300,
     "LogLevel": "DEBUG",
-    "MaxLogFileSize": "10485760"
+    "MaxLogFileSize": "10485760",
+    "Automation": [
+        {
+            "Name": "AP Availability Count",
+            "Enabled": 1,
+            "ParentDeviceGroup": "All Device Groups/AP",
+            "objectTypePaths": "Wifi Access Point",
+            "Plugin": "DEFERRED"
+        }
+    ]
 }

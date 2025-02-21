@@ -32,7 +32,7 @@ dPath = os.getcwd()
 
 # Create a file handler
 #logFilePath = "/app/log/ps-selfmon-last-polled.log"
-logFilePath = file_prefix + "log/ps-di-selfmon.log"
+logFilePath = file_prefix + "log/el-wifi-automation.log"
 #file_handler = logging.FileHandler(logFilePath)
 size_handler = RotatingFileHandler(logFilePath, maxBytes=int(maxLogFileSize), backupCount=10)
 if 'DEBUG' in logLevel:
