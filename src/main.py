@@ -184,7 +184,7 @@ if __name__ == '__main__':
                     logger.info(f"Automation: {automation['Name']} - is disabled. Continuing with next automation")
                     continue
                 logger.info(f"Automation: {automation['Name']} - is Enabled.")
-                wifi_automation.AP_Availability_Count(SevOne_appliance_obj,automation)
+                wifi_automation.Automation(SevOne_appliance_obj,automation)
 
       
             '''

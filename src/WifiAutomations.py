@@ -35,10 +35,211 @@ class WifiAutomations:
 
 
 
-    def AP_Availability_Count(self,SevOne_appliance_obj,automationDict):
+    def Automation(self,SevOne_appliance_obj,automationDict):
         logger.info(f"Starting automation: {automationDict['Name']} ")
+        if (automationDict['Name'] == 'WLC-Group-Count' or automationDict['Name'] == 'AP-Group-Count'):
+            self.group_count(SevOne_appliance_obj,automationDict)
+        elif (automationDict['Name'] == 'Region-Station-Count'):
+            self.station_count(SevOne_appliance_obj,automationDict)
+        elif (automationDict['Name'] == 'Update-WLC-AP-Metadata'):
+            self.update_wlc_metadata(SevOne_appliance_obj,automationDict)
+        elif (automationDict['Name'] == 'Alerts-AP-Count'):
+            self.alerts_ap_count(SevOne_appliance_obj,automationDict)
+
+    def alerts_ap_count(self,SevOne_appliance_obj,automationDict):
         parentDeviceGroupPath=automationDict['ParentDeviceGroup']
-        logger.info(f"AP Device Group to check: {automationDict['ParentDeviceGroup']}")
+        logger.info(f"Device Group to check: {automationDict['ParentDeviceGroup']}")
+
+        # Getting all sub device groups and devices in each device group
+        device_groups = self.get_all_device_groups(SevOne_appliance_obj,parentDeviceGroupPath)
+        logger.debug(f"Device Groups: {device_groups}")
+        # Create a dictionary as below
+        #  {
+        #       <deviceGroupName>:{
+        #               "NoofDevices:<Value>,
+        #               "DeviceGroupID": <value>,
+        #               
+        #               }
+        #  }
+        deviceGroupDict = self.parse_groups(device_groups)
+
+        # Get LastDataPoint of all devices under the parent device group using API call
+   
+       
+        logger.info(f"Device Groups discovered: {deviceGroupDict}")
+        deviceGroupIdList = list(deviceGroupDict.keys())
+        logger.info(f"Device Group Id list: {deviceGroupIdList}")
+
+        #get plugin Id
+        pluginId = SevOne_appliance_obj.get_plugin_id(automationDict["Plugin"])
+        availability_status = self.get_device_availability(SevOne_appliance_obj,deviceGroupIdList,automationDict["objectTypePath"],automationDict["indicatorName"],pluginId)
+        logger.debug(f"availability_status: {availability_status}")
+
+        # Count the number of APs in each device group and  additional Key value pairs into the dictionary - deviceGroupDict
+        #               
+        # Keys : NoofDevices, Available, NotAvailable
+        # Initialize counts
+        for group_id in deviceGroupDict:
+            deviceGroupDict[group_id]["NoofDevices"] = 0
+
+        # Process the IndDictionary
+        for indicator in availability_status["indicatorResults"]:
+            if indicator["deviceName"] not in  automationDict["DevicesToExclude"]:
+                device_groups = indicator["deviceGroups"]
+            
+                for group_id in device_groups:
+                    if group_id in deviceGroupDict :
+                        deviceGroupDict[group_id]["NoofDevices"] += 1
+        timestamp = int(time.time())
+        if automationDict["AlertMonitoringStartTime"] == 0:
+            startTime = 0
+
+        endTime = timestamp
+        
+        
+        
+        #logger.info(f"DeviceGroupDict after availability check: {json.dumps(deviceGroupDict, indent=4)}")
+        for deviceGroupId in deviceGroupIdList:
+            deviceSet = self.get_device_count_with_alerts(SevOne_appliance_obj,deviceGroupId,automationDict["AlertPolicyIdList"],startTime,endTime)
+            if deviceSet is not None:
+                count_of_devices_with_alerts = len(deviceSet)
+                deviceGroupDict[deviceGroupId]["NoOfDevicesWithAlerts"] = count_of_devices_with_alerts
+            else:
+                logger.error("Problem getting the device count with Alerts. Check logs")
+        logger.info(f"DeviceGroupDict after alert count check: {json.dumps(deviceGroupDict, indent=4)}")
+
+        # Format the Information into Device - Object - indicator
+        # Device - "Device-Availaibity-Count"
+        # Objects - <DeviceGroupPath> - Remove 'All Device Group from the Path
+        # Indicator - No of Devices, No of Devices with Alerts
+
+        objectList = []
+        
+        for group_id in deviceGroupDict:
+            ShortDevGroupPath = "/".join(deviceGroupDict[group_id]["DeviceGroupPath"].split("/")[2:])
+            objectDict = {
+                "automaticCreation": True,
+                "description": "Group members Count Metrics",
+                "name": ShortDevGroupPath,
+                "pluginName": "DEFERRED",
+                "timestamps": [
+                    {
+                    "indicators": [
+                        {
+                        "format": "GAUGE",
+                        "name": "No of Devices",
+                        "units": "Number",
+                        "value": deviceGroupDict[group_id]["NoofDevices"]
+                        },
+                        {
+                        "format": "GAUGE",
+                        "name": "No of Devices with Alerts",
+                        "units": "Number",
+                        "value": deviceGroupDict[group_id]["NoOfDevicesWithAlerts"]
+                        }
+                    ],
+                    "timestamp": timestamp
+                    }
+                ],
+                    "type": "Device Group Counts"
+                }
+            if objectDict["name"] != "":
+                objectList.append(objectDict)
+        logger.info(f"ObjectList: {json.dumps(objectList, indent=4)}")
+        result = SevOne_appliance_obj.ingest_dev_obj_ind(automationDict["Name"],automationDict["IPToBeCreated"],objectList)
+        automationDict["AlertMonitoringStartTime"] = endTime
+
+        # Get no of devices under each device group.
+        if result==1:
+            logger.error(f"Error ingesting data into SevOne.")
+        else:
+            logger.debug(f"Result of ingestion: {result}")
+
+
+    
+    def update_wlc_metadata(self,SevOne_appliance_obj,automationDict):
+        parentDeviceGroupPath=automationDict['ParentDeviceGroup']
+        logger.info(f"Device Group to check: {automationDict['ParentDeviceGroup']}")
+
+        # Getting all sub device groups and devices in each device group
+        device_groups = self.get_all_device_groups(SevOne_appliance_obj,parentDeviceGroupPath)
+        logger.debug(f"Device Groups: {device_groups}")
+
+        #For each of the above device groups, get all devices
+        wlc_deviceGroups = device_groups["groups"][0]["children"]
+        wlc_deviceGroupNames = [device["name"] for device in wlc_deviceGroups]
+        logger.debug(f" WLC Device group Names : {wlc_deviceGroupNames}")
+
+        # For each of the WLC listed, get all APs associated [ List of devices under that group ] and their device IDs
+        for wlc in wlc_deviceGroups:
+            wlcName = wlc["name"]
+            deviceIdList = self.get_all_devices_under_device_group(SevOne_appliance_obj,wlc["path"])
+            logger.debug(f" DeviceIdList for {wlcName} : {deviceIdList}")
+
+    def get_device_count_with_alerts(self,SevOne_appliance_obj,deviceGroupId,policyIdList,startTime,endTime):
+        policyFilterList = []
+        for policyId in policyIdList:
+            policyDict = {
+                "policyId": {
+                    "value": policyId
+                } 
+            }
+            policyFilterList.append(policyDict)
+        
+        method = "POST"
+        api_url = "/api/v3/alerts"
+        input_data = {  
+            "query": {
+                "alertStatus": "OPEN",
+                "deviceGroups": {
+                "ids": [deviceGroupId]
+                },
+                
+                "filters": policyFilterList,
+                "showIgnored": True,
+                "timeRange": {
+                "specificInterval": {
+                    "endTime": endTime,
+                    "startTime": startTime
+                }
+                }
+            }
+            }
+        response_data = SevOne_appliance_obj.make_soa_api_call(api_url,method,input_data,insecure=True)
+        if response_data.status_code == 200  :
+            alertList = json.loads(response_data.text)
+            deviceIdSet = set()
+            for alert in alertList["alerts"]:
+                deviceIdSet.add(alert["device"]["id"])
+            return deviceIdSet
+        else:
+            return None
+
+
+        
+    def get_all_devices_under_device_group(self,SevOne_appliance_obj,deviceGroupPath):
+        method = "POST"
+        api_url = "/api/v3/data/last_data_point"
+        input_data = {
+        "deviceGroupPaths": [
+                {
+                    "pathComponents": [
+                        deviceGroupPath
+                    ]
+                }
+            ]
+        }
+        response_data = SevOne_appliance_obj.make_soa_api_call(api_url,method,input_data,insecure=True)
+        if response_data is not None:
+            deviceList = json.loads(response_data.text)
+            deviceIdList= [device["id"] for device in deviceList["devices"]]
+            return deviceIdList
+        else:
+            return None
+    
+    def station_count(self,SevOne_appliance_obj,automationDict):
+        parentDeviceGroupPath=automationDict['ParentDeviceGroup']
+        logger.info(f"Device Group to check: {automationDict['ParentDeviceGroup']}")
 
         # Getting all sub device groups and devices in each device group
         device_groups = self.get_all_device_groups(SevOne_appliance_obj,parentDeviceGroupPath)
@@ -60,7 +261,137 @@ class WifiAutomations:
         logger.info(f"Device Groups discovered: {deviceGroupDict}")
         deviceGroupIdList = list(deviceGroupDict.keys())
         logger.info(f"Device Group Id list: {deviceGroupIdList}")
-        availability_status = self.get_device_availability(SevOne_appliance_obj,deviceGroupIdList)
+
+        #get plugin Id
+        pluginId = SevOne_appliance_obj.get_plugin_id(automationDict["Plugin"])
+        group_station_count = self.get_group_station_count(SevOne_appliance_obj,deviceGroupIdList,automationDict["objectTypePath"],automationDict["indicatorName"],pluginId)
+        logger.debug(f"group_station_count: {group_station_count}")
+
+        # Get the count of No of Stations in each device group and additional Key value pairs into the dictionary - deviceGroupDict
+        #               
+        # Keys : NoOfStations
+        # Initialize counts
+        for group_id in deviceGroupDict:
+            deviceGroupDict[group_id]["NoOfStations"] = 0
+
+        # Process the IndDictionary
+        for indicator in group_station_count["indicatorResults"]:
+            device_groups = indicator["deviceGroups"]
+            stationCount = indicator["dataPoint"]["value"]
+            
+            for group_id in device_groups:
+                if group_id in deviceGroupDict:
+                    deviceGroupDict[group_id]["NoOfStations"] += stationCount
+        logger.info(f"DeviceGroupDict after availability check: {json.dumps(deviceGroupDict, indent=4)}")
+        # Format the Information into Device - Object - indicator
+        # Device - "Device-Availaibity-Count"
+        # Objects - <DeviceGroupPath> - Remove 'All Device Group from the Path
+        # Indicator - NoofDevices, Available, Unavailable
+
+        objectList = []
+        timestamp = int(time.time())
+        for group_id in deviceGroupDict:
+            ShortDevGroupPath = "/".join(deviceGroupDict[group_id]["DeviceGroupPath"].split("/")[2:])
+            objectDict = {
+                "automaticCreation": True,
+                "description": "Group members Count Metrics",
+                "name": ShortDevGroupPath,
+                "pluginName": "DEFERRED",
+                "timestamps": [
+                    {
+                    "indicators": [
+                        {
+                        "format": "GAUGE",
+                        "name": "No of Stations",
+                        "units": "Number",
+                        "value": deviceGroupDict[group_id]["NoOfStations"]
+                        }
+                    ],
+                    "timestamp": timestamp
+                    }
+                ],
+                    "type": "Device Group Counts"
+                }
+            if objectDict["name"] != "":
+                objectList.append(objectDict)
+        logger.info(f"ObjectList: {json.dumps(objectList, indent=4)}")
+        result = SevOne_appliance_obj.ingest_dev_obj_ind(automationDict["Name"],automationDict["IPToBeCreated"],objectList)
+
+        # Get no of devices under each device group.
+        if result==1:
+            logger.error(f"Error ingesting data into SevOne.")
+        else:
+            logger.debug(f"Result of ingestion: {result}")
+
+    
+    def get_group_station_count(self,SevOne_appliance_obj,deviceGroupIdList,objectTypeName,indicatorTypeName,pluginId):
+        #Create the indicatorType
+        method = "POST"
+        api_url = "/api/v3/data/last_data_point"
+        input_data = { 
+            "indicatorFilters": [
+                {
+
+                "deviceTagIds": deviceGroupIdList ,
+
+                "indicatorTypeNames": [
+                    {
+                    "fuzzy": False,
+                    "type": "FUZZABLE_STRING_TYPE_EXACT",
+                    "value": indicatorTypeName
+                    }
+                ],
+
+                "objectTypePaths": [
+                    {
+                    "pathComponents": [
+                        objectTypeName
+                    ]
+                    }
+                ],
+                "pluginIds": [
+                    pluginId
+                ]
+                }
+            ]
+        }
+        response_data = SevOne_appliance_obj.make_soa_api_call(api_url,method,input_data,insecure=True)
+        if response_data is not None:
+            lastDataPoint = json.loads(response_data.text)
+            return lastDataPoint
+        else:
+            return None
+    
+        
+    
+    def group_count(self,SevOne_appliance_obj,automationDict):
+        parentDeviceGroupPath=automationDict['ParentDeviceGroup']
+        logger.info(f"Device Group to check: {automationDict['ParentDeviceGroup']}")
+
+        # Getting all sub device groups and devices in each device group
+        device_groups = self.get_all_device_groups(SevOne_appliance_obj,parentDeviceGroupPath)
+        logger.debug(f"Device Groups: {device_groups}")
+
+        # Create a dictionary as below
+        #  {
+        #       <deviceGroupName>:{
+        #               "NoofDevices:<Value>,
+        #               "DeviceGroupID": <value>,
+        #               
+        #               }
+        #  }
+        deviceGroupDict = self.parse_groups(device_groups)
+
+        # Get LastDataPoint of all devices under the parent device group using API call
+   
+       
+        logger.info(f"Device Groups discovered: {deviceGroupDict}")
+        deviceGroupIdList = list(deviceGroupDict.keys())
+        logger.info(f"Device Group Id list: {deviceGroupIdList}")
+
+        #get plugin Id
+        pluginId = SevOne_appliance_obj.get_plugin_id(automationDict["Plugin"])
+        availability_status = self.get_device_availability(SevOne_appliance_obj,deviceGroupIdList,automationDict["objectTypePath"],automationDict["indicatorName"],pluginId)
         logger.debug(f"availability_status: {availability_status}")
 
         # Count the number of APs in each device group and  additional Key value pairs into the dictionary - deviceGroupDict
@@ -126,12 +457,12 @@ class WifiAutomations:
                     "timestamp": timestamp
                     }
                 ],
-                    "type": "AP Group Counts"
+                    "type": "Device Group Counts"
                 }
             if objectDict["name"] != "":
                 objectList.append(objectDict)
         logger.info(f"ObjectList: {json.dumps(objectList, indent=4)}")
-        result = SevOne_appliance_obj.ingest_dev_obj_ind("AP-Group-Count", "5.5.5.5",objectList)
+        result = SevOne_appliance_obj.ingest_dev_obj_ind(automationDict["Name"],automationDict["IPToBeCreated"],objectList)
 
         # Get no of devices under each device group.
         if result==1:
@@ -388,7 +719,7 @@ class WifiAutomations:
             return None
         
     
-    def get_device_availability(self,SevOne_appliance_obj,deviceGroupIdList):
+    def get_device_availability(self,SevOne_appliance_obj,deviceGroupIdList,objectTypeName,indicatorTypeName,pluginId):
         #Create the indicatorType
         method = "POST"
         api_url = "/api/v3/data/last_data_point"
@@ -402,19 +733,19 @@ class WifiAutomations:
                     {
                     "fuzzy": True,
                     "type": "FUZZABLE_STRING_TYPE_EXACT",
-                    "value": "availability"
+                    "value": indicatorTypeName
                     }
                 ],
 
                 "objectTypePaths": [
                     {
                     "pathComponents": [
-                        "Wifi Access Point"
+                        objectTypeName
                     ]
                     }
                 ],
                 "pluginIds": [
-                    "10"
+                    pluginId
                 ]
                 }
             ]

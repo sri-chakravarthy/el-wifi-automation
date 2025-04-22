@@ -19,10 +19,58 @@
     "MaxLogFileSize": "10485760",
     "Automation": [
         {
-            "Name": "AP Availability Count",
+            "Name": "AP-Group-Count",
+            "IPToBeCreated": "5.5.5.5",
+            "Enabled": 0,
+            "ParentDeviceGroup": "All Device Groups/AP",
+            "objectTypePath": "Wifi Access Point",
+            "indicatorName": "availability",
+            "Plugin": "DEFERRED"
+        },
+        {
+            "Name": "WLC-Group-Count",
+            "IPToBeCreated": "6.6.6.6",
+            "Enabled": 0,
+            "ParentDeviceGroup": "All Device Groups/WLC",
+            "objectTypePath": "Ping Data",
+            "indicatorName": "availability",
+            "Plugin": "ICMP"
+        },
+        {
+            "Name": "Region-Station-Count",
+            "IPToBeCreated": "7.7.7.7",
+            "Enabled": 0,
+            "ParentDeviceGroup": "All Device Groups/WLC",
+            "objectTypePath": "Wifi Controller",
+            "indicatorName": "stations",
+            "Plugin": "DEFERRED"
+        },
+        {
+            "Name": "Update-WLC-AP-Metadata",
+            "Enabled": 0,
+            "NameSpace": "WLC-AP-Common",
+            "Attribute": "WLC Name",
+            "ParentDeviceGroup": "All Device Groups/Wifi/APs/Cisco",
+            "WLC-Namespace": "WLC Device",
+            "WLC-Attribute": "Name",
+            "AP-Namespace": "Wifi Access Point",
+            "AP-Attribute": "WLC Name",
+            "Plugin": "DEFERRED"
+        },
+        {
+            "Name": "Alerts-AP-Count",
+            "IPToBeCreated": "8.8.8.8",
             "Enabled": 1,
             "ParentDeviceGroup": "All Device Groups/AP",
-            "objectTypePaths": "Wifi Access Point",
+            "objectTypePath": "Wifi Access Point",
+            "indicatorName": "availability",
+            "AlertPolicyIdList": [
+                "3"
+            ],
+            "DevicesToExclude": [
+                "Alerts-AP-Count"
+            ],
+            "AlertMonitoringStartTime": 0,
             "Plugin": "DEFERRED"
         }
     ]
