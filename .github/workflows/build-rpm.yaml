@@ -73,7 +73,7 @@ jobs:
         run: |
           TOPDIR=$(pwd)/build/package/rpm
           echo "Using RPM build directory: $TOPDIR"
-          ls -R $TOPDIR  # Debugging step to ensure files exist
+          ls -R $TOPDIR/SPECS  # Debugging step to ensure files exist
           mkdir -p $TOPDIR/SPECS/
           rpmbuild --define "_topdir $TOPDIR" -bb $TOPDIR/SPECS/app.spec
 
