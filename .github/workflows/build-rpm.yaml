@@ -71,10 +71,11 @@ jobs:
 
       - name: Build RPM
         run: |
-          TOPDIR=$(pwd)/build/package/rpm
+          TOPDIR=$(pwd)
           echo "Using RPM build directory: $TOPDIR"
           ls -R $TOPDIR  # Debugging step to ensure files exist
           mkdir -p $TOPDIR/SPECS
+          cp 
           rpmbuild --define "_topdir $TOPDIR" -bb $TOPDIR/SPECS/app.spec
 
       - name: Upload RPM Artifact
