@@ -1,0 +1,103 @@
+name: Build and Deploy RPM
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+      - '**'
+
+env:
+  APP_NAME: ibm-el-wifi-automations
+  RPM_NAME: ibm-el-wifi-automations
+  RPM_SUFFIX: el8.x86_64.rpm
+  CONTAINER_IMAGE_TAG: latest
+  CONTAINER_REGISTRY: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  build-container:
+    name: Build Container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Build Container Image for RHEL 8.9
+        run: |
+          podman build --network=host \
+            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${{ env.CONTAINER_IMAGE_TAG }} \
+            --build-arg APP_NAME=${{ env.APP_NAME }} \
+            -f deploy/Containerfile .
+
+
+      - name: Save Container Image
+        run: |
+          mkdir -p build/package/rpm/SOURCES
+          podman save ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${{ env.CONTAINER_IMAGE_TAG }} \
+            -o build/package/rpm/SOURCES/${{ env.APP_NAME }}.${{ env.CONTAINER_IMAGE_TAG }}.tar
+
+      - name: Upload Container Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-image
+          path: build/package/rpm/SOURCES/
+
+  build-rpm:
+    name: Build RPM
+    runs-on: ubuntu-latest
+    needs: build-container
+    steps:
+      - name: Download Container Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: container-image
+          path: build/package/rpm/SOURCES  # Specify where to download
+
+  
+     # - name: Prepare RPM Sources
+     #   run: |
+     #     ls -lrt
+     #     cp -r src/ build/package/rpm/SOURCES/
+      - name: Export GitHub Environment Variables
+        run: |
+          export GITHUB_REF_NAME=${{ github.ref_name }}
+          export CONTAINER_REGISTRY=${{ env.CONTAINER_REGISTRY }}
+
+      - name: Build RPM
+        run: |
+          TOPDIR=$(pwd)/build/package/rpm
+          echo "Using RPM build directory: $TOPDIR"
+          ls -R $TOPDIR  # Debugging step to ensure files exist
+          mkdir -p $TOPDIR/SPECS/
+          cp $TOPDIR/SOURCES/src/app.spec $TOPDIR/SPECS/app.spec
+          rpmbuild --define "_topdir $TOPDIR" -bb $TOPDIR/SPECS/app.spec
+
+      - name: Upload RPM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm
+          path: build/package/rpm/RPMS
+
+  upload-rpm:
+    name: Upload RPM to Artifactory
+    runs-on: ubuntu-latest
+    needs: build-rpm
+    steps:
+      - name: Download RPM Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rpm
+
+      - name: Upload to Artifactory
+        env:
+          ARTIFACTORY_API_KEY: ${{ secrets.ARTIFACTORY_API_KEY }}
+        run: |
+          curl -k -H "X-JFrog-Art-Api:${ARTIFACTORY_API_KEY}" \
+            -X PUT "${{ secrets.ARTIFACTORY_URL }}/${{ env.RPM_NAME }}/${{ github.ref_name }}-${{ github.run_number }}.${{ env.RPM_SUFFIX }}" \
+            -T build/package/rpm/RPMS/x86_64/${{ env.RPM_NAME }}-${{ github.ref_name }}-${{ github.run_number }}.${{ env.RPM_SUFFIX }}

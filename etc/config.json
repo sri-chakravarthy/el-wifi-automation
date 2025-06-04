@@ -1,7 +1,7 @@
 {
     "ApplianceDetails": [
         {
-            "IPAddress": "c29073v1.fyre.ibm.com",
+            "IPAddress": "c49988v1.fyre.ibm.com",
             "UserName": "admin",
             "Password": {
                 "EncryptedPwd": "gAAAAABntXDxMG47FQrqItF89-kCLw39rNdADyFW6oJgUHq4WvgoOFajsK-G7ArvvzchZ3MHjvalOnoRhufpR-6zzXtrIa7X8Q=="
@@ -60,16 +60,36 @@
         {
             "Name": "Alerts-AP-Count",
             "IPToBeCreated": "8.8.8.8",
-            "Enabled": 1,
+            "Enabled": 0,
             "ParentDeviceGroup": "All Device Groups/AP",
             "objectTypePath": "Wifi Access Point",
             "indicatorName": "availability",
             "AlertPolicyIdList": [
-                "3"
+                "3",
+                "14"
             ],
             "DevicesToExclude": [
                 "Alerts-AP-Count"
             ],
+            "AlertMonitoringStartTime": 0,
+            "Plugin": "DEFERRED"
+        },
+        {
+            "Name": "Severity-AP-Count",
+            "IPToBeCreated": "9.9.9.9",
+            "Enabled": 1,
+            "ParentDeviceGroup": "All Device Groups/AP",
+            "AlertSeverityDict": {
+                "CLEAR": 0,
+                "DEBUG": 1,
+                "INFO": 2,
+                "NOTICE": 3,
+                "WARNING": 4,
+                "ERROR": 5,
+                "CRITICAL": 6,
+                "ALERT": 7,
+                "EMERGENCY": 8
+            },
             "AlertMonitoringStartTime": 0,
             "Plugin": "DEFERRED"
         }

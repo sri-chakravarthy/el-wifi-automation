@@ -1,42 +1,20 @@
-ARG OPENJDK_VERSION=8
-ARG PYTHON_VERSION=3.11.3
-ARG APP_USER_USERNAME=ingestion
-ARG APP_USER_ID=7001
-ARG DOCKER_MIRROR_PYTHON="docker-mirror.s1artrtp1.s1.devit.ibm.com/library/python:${PYTHON_VERSION}-alpine"
-#ARG DOCKER_MIRROR_PYSEVONE="docker-mirror.s1artrtp1.s1.devit.ibm.com/pysevone-base:${PYSEVONE_TAG}"
-ARG CONTAINER_REGISTRY="docker.sevone.com"
-#FROM ${DOCKER_MIRROR_PYSEVONE} as PYSEVONE_TAGGED
-FROM ${DOCKER_MIRROR_PYTHON}
+# Base image: Python 3.7 on Alpine
+FROM python:3.13-alpine
 
-ARG APP_USER_USERNAME=ingestion
-ARG APP_USER_ID=7001
-ENV APP_USER_USERNAME ${APP_USER_USERNAME}
-ENV APP_USER_ID ${APP_USER_ID}
+# Install dependencies required for the application
+RUN apk add --no-cache bash
 
-ENV SEVONE_SELFMON_NAME el-wifi-automation
-ENV PYTHONWARNINGS "ignore:Unverified HTTPS request"
-ENV LOG_LEVEL info
+# Copy application files
+WORKDIR /app
+COPY src/* /app/src/
+RUN mkdir -p /app/etc
 
+# Install Python dependencies if required (uncomment if using requirements.txt)
+# COPY requirements.txt /app/
+# RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./requirements.txt /app/requirements.txt
+# Set environment variables (optional)
+ENV PYTHONUNBUFFERED=1
 
-#Newly added files
-COPY ./etc/* /app/etc/
-COPY ./env/* /app/env/
-COPY ./src/* /app/src/
-
-
-
-
-RUN apk --no-cache add curl && \
-    mkdir -p /var/log/app && \
-    mkdir -p /app/log && \
-    mkdir -p /app/.ssh && \
-    pip install -r /app/requirements.txt && \
-    addgroup -g ${APP_USER_ID} ingestion && \
-    adduser -D -u ${APP_USER_ID} -G ${APP_USER_USERNAME} -H -s /sbin/nologin ${APP_USER_USERNAME} && \
-    addgroup ${APP_USER_USERNAME} wheel && \
-    chown -R ${APP_USER_USERNAME}:${APP_USER_USERNAME} /app /var/log/app  && \
-    chmod -R 777 /app/log 
-
+# Default command to run the application
 CMD ["python3", "/app/src/main.py"]
