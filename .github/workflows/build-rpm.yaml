@@ -75,7 +75,6 @@ jobs:
           echo "Using RPM build directory: $TOPDIR"
           ls -R $TOPDIR  # Debugging step to ensure files exist
           mkdir -p $TOPDIR/SPECS/
-          cp $TOPDIR/SOURCES/src/app.spec $TOPDIR/SPECS/app.spec
           rpmbuild --define "_topdir $TOPDIR" -bb $TOPDIR/SPECS/app.spec
 
       - name: Upload RPM Artifact
