@@ -96,7 +96,7 @@ jobs:
           echo "Reached RPM Build"
           ls -R $TOPDIR
           # Build RPM
-          rpmbuild --define "_topdir $TOPDIR" -bb SPECS/app.spec
+          rpmbuild --define "_topdir $TOPDIR" -bb $TOPDIR/SPECS/app.spec
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v4
