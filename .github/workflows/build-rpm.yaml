@@ -57,6 +57,7 @@ jobs:
         run: |
           TOPDIR=$(pwd)/rpmbuild
           echo "Using RPM build directory: $TOPDIR"
+          ls
           ls -R build/package/rpm || echo "Directory missing"
 
       - name: Download Container Artifact
