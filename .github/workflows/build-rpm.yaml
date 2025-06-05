@@ -23,6 +23,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history including tags
+          fetch-tags: true  # (optional, implied by fetch-depth: 0)
 
       - name: Set up Podman
         run: |
@@ -32,7 +35,7 @@ jobs:
       - name: Set RAW_TAG from latest Git tag
         id: get_tag
         run: |
-          RAW_TAG=$(git describe --tags --abbrev=0)
+          RAW_TAG=$(git describe --tags --abbrev=0 || echo "0.0.0-dev"))
           echo "RAW_TAG=$RAW_TAG" >> $GITHUB_ENV
 
       - name: Build Container Image for RHEL 8.9
@@ -62,6 +65,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history including tags
+          fetch-tags: true  # (optional, implied by fetch-depth: 0)
 
       - name: Before download - List rpm dir
         run: |
@@ -80,9 +86,9 @@ jobs:
       - name: Set RAW_TAG from latest Git tag
         id: get_tag
         run: |
-          RAW_TAG=$(git describe --tags --abbrev=0)
+          RAW_TAG=$(git describe --tags --abbrev=0 || echo "0.0.0-dev")
           echo "RAW_TAG=$RAW_TAG" >> $GITHUB_ENV
-          
+
      # - name: Prepare RPM Sources
      #   run: |
      #     ls -lrt
