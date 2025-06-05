@@ -68,6 +68,10 @@ jobs:
         run: |
           export GITHUB_REF_NAME=${{ github.ref_name }}
           export CONTAINER_REGISTRY=${{ env.CONTAINER_REGISTRY }}
+          
+      - name: Before download - List rpm dir
+        run: |
+          ls -R build/package/rpm || echo "Directory missing"
 
       - name: Build RPM
         run: |
