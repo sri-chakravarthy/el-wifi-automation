@@ -55,8 +55,10 @@ jobs:
     steps:
       - name: Before download - List rpm dir
         run: |
+          TOPDIR=$(pwd)/rpmbuild
+          echo "Using RPM build directory: $TOPDIR"
           ls -R build/package/rpm || echo "Directory missing"
-          
+
       - name: Download Container Artifact
         uses: actions/download-artifact@v4
         with:
