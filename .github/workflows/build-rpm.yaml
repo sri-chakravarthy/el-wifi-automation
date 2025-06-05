@@ -84,9 +84,15 @@ jobs:
           TOPDIR=$(pwd)/rpmbuild
           echo "Using RPM build directory: $TOPDIR"
           mkdir -p $TOPDIR/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          mkdir -p $TOPDIR/SOURCES/app/{bin,etc,env}
+
+          cp -r bin/* $TOPDIR/SOURCES/app/bin
+          cp -r etc/* $TOPDIR/SOURCES/app/etc
+          cp -r env/* $TOPDIR/SOURCES/app/env
 
           # Copy files into correct structure
           ls -R build/package/rpm
+          
           cp build/package/rpm/SOURCES/el-wifi-automations.latest.tar $TOPDIR/SOURCES/
           cp build/package/rpm/SPECS/app.spec $TOPDIR/SPECS/
 
