@@ -9,7 +9,7 @@ on:
       - '**'
 
 env:
-  APP_NAME: ibm-el-wifi-automations
+  APP_NAME: el-wifi-automations
   RPM_NAME: ibm-el-wifi-automations
   RPM_SUFFIX: el8.x86_64.rpm
   CONTAINER_IMAGE_TAG: latest
