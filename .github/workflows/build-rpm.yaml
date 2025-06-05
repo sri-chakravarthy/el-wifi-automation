@@ -76,6 +76,7 @@ jobs:
           mkdir -p $TOPDIR/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
           # Copy files into correct structure
+          ls -R build/package/rpm/SOURCES/
           cp build/package/rpm/SOURCES/ibm-el-wifi-automations.latest.tar $TOPDIR/SOURCES/
           cp build/package/rpm/SPECS/app.spec $TOPDIR/SPECS/
 
