@@ -20,7 +20,7 @@
 
 Name:		%{rpmname}
 Version:	%{version}
-%if %{release}
+if 0%{release}
 Release:	%{release}%{?dist}
 %else
 Release:	1%{?dist}
