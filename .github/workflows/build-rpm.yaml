@@ -55,7 +55,7 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        
+
       - name: Before download - List rpm dir
         run: |
           TOPDIR=$(pwd)/rpmbuild
@@ -86,14 +86,14 @@ jobs:
           mkdir -p $TOPDIR/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
           # Copy files into correct structure
-          ls -R build/package/rpm/SOURCES/
+          ls -R build/package/rpm
           cp build/package/rpm/SOURCES/el-wifi-automations.latest.tar $TOPDIR/SOURCES/
           cp build/package/rpm/SPECS/app.spec $TOPDIR/SPECS/
 
           # Optional: list contents for debugging
           #echo "Spec file:"
           #cat $TOPDIR/SPECS/app.spec
-
+          echo "Reached RPM Build"
           # Build RPM
           rpmbuild --define "_topdir $TOPDIR" -bb SPECS/app.spec
 
