@@ -94,6 +94,7 @@ jobs:
           #echo "Spec file:"
           #cat $TOPDIR/SPECS/app.spec
           echo "Reached RPM Build"
+          ls -R $TOPDIR
           # Build RPM
           rpmbuild --define "_topdir $TOPDIR" -bb SPECS/app.spec
 
