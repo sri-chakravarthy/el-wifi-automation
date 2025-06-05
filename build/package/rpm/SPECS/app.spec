@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 %define commit %{getenv:GITHUB_REF_NAME}
-%define version %{getenv:GITHUB_REF_NAME}
+%define version %{getenv:VERSION}
 %define release %{getenv:RELEASE}
 %define appname %{getenv:APP_NAME}
 %define giturl %{getenv:GITHUB_SERVER_URL}/%{getenv:GITHUB_REPOSITORY}
@@ -59,7 +59,7 @@ mkdir -p %{buildroot}/var/custom/ps-addon/%{appname}/log
 
 
 #mkdir -p %{buildroot}/var/custom/ps-addon/%{appname}/imports
-cp %{SOURCE0}/%{appname}.%{commit}.container-image.tar %{buildroot}/var/custom/ps-addon/%{appname}/container/%{appname}-%{commit}.container-image.tar
+cp %{SOURCE0}/%{appname}.%{version}.tar %{buildroot}/var/custom/ps-addon/%{appname}/container/%{appname}-%{version}.tar
 #cp %{SOURCE0}/* %{buildroot}/var/custom/ps-addon/%{appname}/
 #cp %{SOURCE0}/app.env.example %{buildroot}/var/custom/ps-addon/%{appname}/env/.ibm-el-%{appname}.env.example
 #cp %{SOURCE0}/sample-config.json %{buildroot}/var/custom/ps-addon/%{appname}/etc/sample-config.json

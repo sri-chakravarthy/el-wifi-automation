@@ -8,6 +8,7 @@ on:
       - main
       - '**'
 
+
 env:
   APP_NAME: el-wifi-automations
   RPM_NAME: ibm-el-wifi-automations
@@ -23,6 +24,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          RAW_TAG=${GITHUB_REF##*/}
+          VERSION=${RAW_TAG#v}
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Set up Podman
         run: |
           sudo apt-get update
@@ -31,7 +40,7 @@ jobs:
       - name: Build Container Image for RHEL 8.9
         run: |
           podman build --network=host \
-            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${{ env.CONTAINER_IMAGE_TAG }} \
+            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${VERSION} \
             --build-arg APP_NAME=${{ env.APP_NAME }} \
             -f deploy/Containerfile .
 
@@ -40,7 +49,7 @@ jobs:
         run: |
           mkdir -p build/package/rpm/SOURCES
           podman save ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${{ env.CONTAINER_IMAGE_TAG }} \
-            -o build/package/rpm/SOURCES/${{ env.APP_NAME }}.${{ env.CONTAINER_IMAGE_TAG }}.tar
+            -o build/package/rpm/SOURCES/${{ env.APP_NAME }}.${VERSION}.tar
 
       - name: Upload Container Artifact
         uses: actions/upload-artifact@v4
@@ -56,9 +65,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Extract version from tag
+        id: version
+        run: |
+          RAW_TAG=${GITHUB_REF##*/}
+          VERSION=${RAW_TAG#v}
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Before download - List rpm dir
         run: |
           TOPDIR=$(pwd)/rpmbuild
+          
           echo "Using RPM build directory: $TOPDIR"
           ls
           ls -R build/package/rpm || echo "Directory missing"
@@ -78,11 +96,13 @@ jobs:
         run: |
           export GITHUB_REF_NAME=${{ github.ref_name }}
           export CONTAINER_REGISTRY=${{ env.CONTAINER_REGISTRY }}
+          export VERSION=${{ steps.version.outputs.version }}
 
       - name: Build RPM
         run: |
           TOPDIR=$(pwd)/rpmbuild
           echo "Using RPM build directory: $TOPDIR"
+
           mkdir -p $TOPDIR/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
           mkdir -p $TOPDIR/SOURCES/app/{bin,etc,env}
 
@@ -93,7 +113,7 @@ jobs:
           # Copy files into correct structure
           ls -R build/package/rpm
           
-          cp build/package/rpm/SOURCES/el-wifi-automations.latest.tar $TOPDIR/SOURCES/
+          cp build/package/rpm/SOURCES/el-wifi-automations.latest.tar $TOPDIR/SOURCES/el-wifi-automations.${VERSION}.tar
           cp build/package/rpm/SPECS/app.spec $TOPDIR/SPECS/
 
           # Optional: list contents for debugging
