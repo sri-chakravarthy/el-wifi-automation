@@ -114,7 +114,7 @@ jobs:
           # Copy files into correct structure
           ls -R build/package/rpm
           
-          cp build/package/rpm/SOURCES/el-wifi-automations.${VERSION}.tar $TOPDIR/SOURCES/el-wifi-automations.${VERSION}.tar
+          cp build/package/rpm/SOURCES/el-wifi-automations.${GITHUB_REF_NAME}.tar $TOPDIR/SOURCES/el-wifi-automations.${GITHUB_REF_NAME}.tar
           cp build/package/rpm/SPECS/app.spec $TOPDIR/SPECS/
 
           # Optional: list contents for debugging
