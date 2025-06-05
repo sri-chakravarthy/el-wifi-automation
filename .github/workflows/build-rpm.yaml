@@ -3,7 +3,7 @@ name: Build and Deploy RPM
 on:
   push:
     tags:
-      - 'v*'
+      - '**'
     branches:
       - main
       - '**'
@@ -13,7 +13,7 @@ env:
   APP_NAME: el-wifi-automations
   RPM_NAME: ibm-el-wifi-automations
   RPM_SUFFIX: el8.x86_64.rpm
-  CONTAINER_IMAGE_TAG: latest
+  CONTAINER_IMAGE_TAG: ${RAW_TAG}
   CONTAINER_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
@@ -24,14 +24,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Extract version from tag
-        id: get_version
-        run: |
-          RAW_TAG=${GITHUB_REF##*/}
-          VERSION=${RAW_TAG#v}
-          echo "VERSION=$VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Set up Podman
         run: |
           sudo apt-get update
@@ -40,7 +32,7 @@ jobs:
       - name: Build Container Image for RHEL 8.9
         run: |
           podman build --network=host \
-            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${VERSION} \
+            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${{env.CONTAINER_IMAGE_TAG}} \
             --build-arg APP_NAME=${{ env.APP_NAME }} \
             -f deploy/Containerfile .
 
@@ -49,7 +41,7 @@ jobs:
         run: |
           mkdir -p build/package/rpm/SOURCES
           podman save ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${{ env.CONTAINER_IMAGE_TAG }} \
-            -o build/package/rpm/SOURCES/${{ env.APP_NAME }}.${VERSION}.tar
+            -o build/package/rpm/SOURCES/${{ env.APP_NAME }}.${{env.CONTAINER_IMAGE_TAG}}.tar
 
       - name: Upload Container Artifact
         uses: actions/upload-artifact@v4
@@ -64,14 +56,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Extract version from tag
-        id: version
-        run: |
-          RAW_TAG=${GITHUB_REF##*/}
-          VERSION=${RAW_TAG#v}
-          echo "VERSION=$VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Before download - List rpm dir
         run: |
@@ -96,7 +80,7 @@ jobs:
         run: |
           export GITHUB_REF_NAME=${{ github.ref_name }}
           export CONTAINER_REGISTRY=${{ env.CONTAINER_REGISTRY }}
-          export VERSION=${{ steps.version.outputs.version }}
+          export VERSION=${{ env.CONTAINER_IMAGE_TAG }}
 
       - name: Build RPM
         run: |
