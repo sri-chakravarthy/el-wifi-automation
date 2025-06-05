@@ -29,10 +29,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y podman
 
+      - name: Set RAW_TAG from latest Git tag
+        id: get_tag
+        run: |
+          RAW_TAG=$(git describe --tags --abbrev=0)
+          echo "RAW_TAG=$RAW_TAG" >> $GITHUB_ENV
+
       - name: Build Container Image for RHEL 8.9
         run: |
           podman build --network=host \
-            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${{env.CONTAINER_IMAGE_TAG}} \
+            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:$RAW_TAG \
             --build-arg APP_NAME=${{ env.APP_NAME }} \
             -f deploy/Containerfile .
 
@@ -40,8 +46,8 @@ jobs:
       - name: Save Container Image
         run: |
           mkdir -p build/package/rpm/SOURCES
-          podman save ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:${{ env.CONTAINER_IMAGE_TAG }} \
-            -o build/package/rpm/SOURCES/${{ env.APP_NAME }}.${{env.CONTAINER_IMAGE_TAG}}.tar
+          podman save ${{ env.CONTAINER_REGISTRY }}/${{ env.APP_NAME }}:$RAW_TAG \
+            -o build/package/rpm/SOURCES/${{ env.APP_NAME }}.$RAW_TAG.tar
 
       - name: Upload Container Artifact
         uses: actions/upload-artifact@v4
@@ -71,7 +77,12 @@ jobs:
           name: container-image
           path: build/package/rpm/SOURCES  # Specify where to download
 
-  
+      - name: Set RAW_TAG from latest Git tag
+        id: get_tag
+        run: |
+          RAW_TAG=$(git describe --tags --abbrev=0)
+          echo "RAW_TAG=$RAW_TAG" >> $GITHUB_ENV
+          
      # - name: Prepare RPM Sources
      #   run: |
      #     ls -lrt
@@ -80,7 +91,7 @@ jobs:
         run: |
           export GITHUB_REF_NAME=${{ github.ref_name }}
           export CONTAINER_REGISTRY=${{ env.CONTAINER_REGISTRY }}
-          export VERSION=${{ env.CONTAINER_IMAGE_TAG }}
+          export VERSION=$RAW_TAG
 
       - name: Build RPM
         run: |
