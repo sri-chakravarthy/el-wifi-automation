@@ -35,7 +35,7 @@ jobs:
       - name: Set RAW_TAG from latest Git tag
         id: get_tag
         run: |
-          RAW_TAG=$(git describe --tags --abbrev=0 || echo "0.0.0-dev"))
+          RAW_TAG=$(git describe --tags --abbrev=0 || echo "0.0.0-dev")
           echo "RAW_TAG=$RAW_TAG" >> $GITHUB_ENV
 
       - name: Build Container Image for RHEL 8.9
