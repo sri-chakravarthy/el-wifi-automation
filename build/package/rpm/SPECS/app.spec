@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 %define commit %{getenv:GITHUB_REF_NAME}
-%define version %{getenv:VERSION}
+%define version %{getenv:GITHUB_REF_NAME}
 %define release %{getenv:RELEASE}
 %define appname %{getenv:APP_NAME}
 %define giturl %{getenv:GITHUB_SERVER_URL}/%{getenv:GITHUB_REPOSITORY}
