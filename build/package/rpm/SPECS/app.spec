@@ -81,7 +81,7 @@ cp -r %{SOURCE0}/etc/* %{buildroot}/var/custom/ps-addon/%{appname}/etc/
 #/opt/SevOne/%{appname}/env/key.txt
 #/opt/SevOne/%{appname}/etc/*.json
 #/opt/SevOne/%{appname}/etc/*.csv
-/var/custom/ps-addon/%{appname}/bin/*.sh
+/var/custom/ps-addon/%{appname}/bin/*
 #/opt/SevOne/%{appname}/src/*.py
 #/opt/SevOne/%{appname}/cronjob.yml
 /var/custom/ps-addon/%{appname}/etc/*
