@@ -73,7 +73,7 @@ cp -r %{SOURCE0}/etc/* %{buildroot}/var/custom/ps-addon/%{appname}/etc/
 
 
 %files
-%dir /var/custom/%{appname}/
+%dir /var/custom/ps-addon/%{appname}/
 #%dir /opt/SevOne/%{appname}/incoming
 #%dir /opt/SevOne/%{appname}/archive
 /var/custom/ps-addon/%{appname}/container/%{appname}-%{commit}.tar
