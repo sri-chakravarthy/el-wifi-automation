@@ -109,11 +109,11 @@ if [ ! -f "/var/custom/ps-addon/%{appname}/config.json" ]; then
     if [ ! -f "/var/custom/ps-addon/%{appname}/sample-config.json" ]; then
         touch /var/custom/ps-addon/%{appname}/config.json
     else
-        cp /var/custom/ps-addon/%{appname}/sample-config.json /var/custom/%{appname}/config.json
+        cp /var/custom/ps-addon/%{appname}/sample-config.json /var/custom/ps-addon/%{appname}/config.json
     fi
 else
-    cp  /var/custom/ps-addon/%{appname}/config.json  /var/custom/%{appname}/config.json_orig_%{commit}
-    cp  /var/custom/ps-addon/%{appname}/sample-config.json /var/custom/%{appname}/config.json
+    cp  /var/custom/ps-addon/%{appname}/config.json  /var/custom/%{appname}/ps-addon/config.json_orig_%{commit}
+    cp  /var/custom/ps-addon/%{appname}/sample-config.json /var/custom/ps-addon/%{appname}/config.json
 fi
 
 #chown -R %{appusername}:%{appusername} /var/custom/ps-addon/%{appname}
@@ -140,7 +140,7 @@ for image in $(sudo /usr/bin/podman image list | grep {appname} | awk '{print $1
 done
 echo "---   Removed old container images for %{appname}"
 echo "---   Loading the container image for %{appname} %{commit}"
-sudo /usr/bin/podman load -i /var/custom/ps-addon/%{appname}/container/%{appname}-%{commit}.container-image.tar
+sudo /usr/bin/podman load -i /var/custom/ps-addon/%{appname}/container/%{appname}-%{commit}.tar
 echo "---   Loaded the container image for %{appname} %{commit}"
 
 #echo "---   Creating kubernetes cronjob %{appname}"
