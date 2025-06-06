@@ -76,7 +76,7 @@ cp -r %{SOURCE0}/etc/* %{buildroot}/var/custom/ps-addon/%{appname}/etc/
 %dir /var/custom/%{appname}/
 #%dir /opt/SevOne/%{appname}/incoming
 #%dir /opt/SevOne/%{appname}/archive
-/var/custom/ps-addon/%{appname}/container/%{appname}-%{commit}.container-image.tar
+/var/custom/ps-addon/%{appname}/container/%{appname}-%{commit}.tar
 #/opt/SevOne/%{appname}/env/.ibm-el-%{appname}.env.example
 #/opt/SevOne/%{appname}/env/key.txt
 #/opt/SevOne/%{appname}/etc/*.json
