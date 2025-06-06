@@ -168,7 +168,7 @@ then
     echo "---   Removing the container image for %{appname} %{commit} (%{containerimage}:%{commit})"
     sudo podman rmi -f %{containerimage}:%{commit}
     echo "---   Removed the container image for %{appname} %{commit} (%{containerimage}:%{commit})"
-    #echo "--- Removing the app related directories"
-    #rm -rf /opt/SevOne/%{appname}
+    echo "--- Removing the app related directories"
+    rm -rf /var/custom/ps-addon/%{appname}/
 fi
 
