@@ -1,310 +1,8 @@
 {
-    "DIDetails": [
-        {
-            "IPAddress": "",
-            "UserName": "datainsight",
-            "Password": {
-                "EncryptedPwd": "gAAAAABl-CX7lIcUN4JSFdLD_Erva6nP1kOeKj4v8A6ODLVB6b7Q2F1d0GyvhEfSmr4wQPdmU7nJs86glRn2xogBmItXQ4Zi2Q=="
-            },
-            "Type": "Prometheus",
-            "Metrics": {
-                "pod": [
-                    {
-                        "query": "kube_pod_status_phase{phase=\"Running\"}",
-                        "indicatorName": "pod_status",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ],
-                "deployment": [
-                    {
-                        "query": "kube_deployment_spec_replicas - kube_deployment_status_replicas_available",
-                        "indicatorName": "Replicas Unavailable",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ],
-                "certificate": [
-                    {
-                        "query": "certmanager_certificate_expiration_timestamp_seconds/(3600*24*7)",
-                        "indicatorName": "Time to Expire in weeks",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ],
-                "Containers Interface": [
-                    {
-                        "query": "{__name__=\"container_network_receive_bytes_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Bytes"
-                    },
-                    {
-                        "query": "{__name__=\"container_network_receive_errors_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_network_receive_packets_dropped_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_network_receive_packets_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_network_transmit_bytes_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Bytes"
-                    },
-                    {
-                        "query": "{__name__=\"container_network_transmit_errors_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_network_transmit_packets_dropped_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_network_transmit_packets_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Number"
-                    }
-                ],
-                "DI User Sessions": [
-                    {
-                        "query": "{__name__=\"di_num_active_users\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_active_users_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_active_user_sessions\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_active_user_sessions_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_maps\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_maps_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_reports\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_reports_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_scheduled_reports\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_teams\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_tenants\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_users\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"di_num_users_per_tenant\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ],
-                "Containers": [
-                    {
-                        "query": "{__name__=\"container_cpu_cfs_periods_total\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_cpu_cfs_throttled_periods_total\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_cpu_cfs_throttled_seconds_total\"}",
-                        "type": "GAUGE",
-                        "units": "Seconds"
-                    },
-                    {
-                        "query": "{__name__=\"container_cpu_load_average_10s\"}",
-                        "type": "GAUGE",
-                        "units": "Percent"
-                    },
-                    {
-                        "query": "{__name__=\"container_cpu_system_seconds_total\"}",
-                        "type": "GAUGE",
-                        "units": "Seconds"
-                    },
-                    {
-                        "query": "{__name__=\"container_cpu_usage_seconds_total\"}",
-                        "type": "GAUGE",
-                        "units": "Seconds"
-                    },
-                    {
-                        "query": "{__name__=\"container_cpu_user_seconds_total\"}",
-                        "type": "GAUGE",
-                        "units": "Seconds"
-                    },
-                    {
-                        "query": "{__name__=\"container_cpu_user_seconds_total\"}",
-                        "type": "GAUGE",
-                        "units": "Seconds"
-                    },
-                    {
-                        "query": "{__name__=\"container_fs_reads_bytes_total\"}",
-                        "type": "GAUGE",
-                        "units": "Bytes"
-                    },
-                    {
-                        "query": "{__name__=\"container_fs_reads_total\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_fs_writes_total\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_fs_writes_bytes_total\"}",
-                        "type": "GAUGE",
-                        "units": "Bytes"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_cache\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_failcnt\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_failures_total\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_mapped_file\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_max_usage_bytes\"}",
-                        "type": "GAUGE",
-                        "units": "Bytes"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_rss\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_swap\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_usage_bytes\"}",
-                        "type": "GAUGE",
-                        "units": "Bytes"
-                    },
-                    {
-                        "query": "{__name__=\"container_memory_working_set_bytes\"}",
-                        "type": "GAUGE",
-                        "units": "Bytes"
-                    },
-                    {
-                        "query": "{__name__=\"container_processes\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_sockets\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_threads\"}",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "{__name__=\"container_blkio_device_usage_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Number"
-                    }
-                ],
-                "kube node": [
-                    {
-                        "query": "kube_node_status_condition{condition=\"Ready\", status=\"true\"}",
-                        "indicatorName": "node_status",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "kube_node_status_condition{condition=\"DiskPressure\", status=\"false\"}",
-                        "indicatorName": "disk_pressure",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    },
-                    {
-                        "query": "kube_node_status_condition{condition=\"MemoryPressure\", status=\"false\"}",
-                        "indicatorName": "memory_pressure",
-                        "type": "GAUGE",
-                        "units": "Number"
-                    }
-                ],
-                "DiskIO": [
-                    {
-                        "query": "{__name__=\"node_disk_io_time_weighted_seconds_total\"}",
-                        "type": "COUNTER64",
-                        "units": "Seconds"
-                    }
-                ]
-            },
-            "objectNames": [],
-            "body": {},
-            "deviceName": "DataInsight1-selfmon3"
-        }
-    ],
     "ApplianceDetails": [
         {
-            "IPAddress": "3",
-            "UserName": "admin",
+            "IPAddress": "",
+            "UserName": "",
             "Password": "",
             "sshUserName": "root",
             "sshPassword": "",
@@ -312,7 +10,83 @@
             "Type": "NMS"
         }
     ],
-    "interval": 300,
-    "LogLevel": "INFO",
-    "MaxLogFileSize": "10485760"
+    "LogLevel": "DEBUG",
+    "MaxLogFileSize": "10485760",
+    "Automation": [
+        {
+            "Name": "AP-Group-Count",
+            "IPToBeCreated": "5.5.5.5",
+            "Enabled": 0,
+            "ParentDeviceGroup": "All Device Groups/AP",
+            "objectTypePath": "Wifi Access Point",
+            "indicatorName": "availability",
+            "Plugin": "DEFERRED"
+        },
+        {
+            "Name": "WLC-Group-Count",
+            "IPToBeCreated": "6.6.6.6",
+            "Enabled": 0,
+            "ParentDeviceGroup": "All Device Groups/WLC",
+            "objectTypePath": "Ping Data",
+            "indicatorName": "availability",
+            "Plugin": "ICMP"
+        },
+        {
+            "Name": "Region-Station-Count",
+            "IPToBeCreated": "7.7.7.7",
+            "Enabled": 0,
+            "ParentDeviceGroup": "All Device Groups/WLC",
+            "objectTypePath": "Wifi Controller",
+            "indicatorName": "stations",
+            "Plugin": "DEFERRED"
+        },
+        {
+            "Name": "Update-WLC-AP-Metadata",
+            "Enabled": 0,
+            "NameSpace": "WLC-AP-Common",
+            "Attribute": "WLC Name",
+            "ParentDeviceGroup": "All Device Groups/Wifi/APs/Cisco",
+            "WLC-Namespace": "WLC Device",
+            "WLC-Attribute": "Name",
+            "AP-Namespace": "Wifi Access Point",
+            "AP-Attribute": "WLC Name",
+            "Plugin": "DEFERRED"
+        },
+        {
+            "Name": "Alerts-AP-Count",
+            "IPToBeCreated": "8.8.8.8",
+            "Enabled": 0,
+            "ParentDeviceGroup": "All Device Groups/AP",
+            "objectTypePath": "Wifi Access Point",
+            "indicatorName": "availability",
+            "AlertPolicyIdList": [
+                "3",
+                "14"
+            ],
+            "DevicesToExclude": [
+                "Alerts-AP-Count"
+            ],
+            "AlertMonitoringStartTime": 0,
+            "Plugin": "DEFERRED"
+        },
+        {
+            "Name": "Severity-AP-Count",
+            "IPToBeCreated": "9.9.9.9",
+            "Enabled": 1,
+            "ParentDeviceGroup": "All Device Groups/AP",
+            "AlertSeverityDict": {
+                "CLEAR": 0,
+                "DEBUG": 1,
+                "INFO": 2,
+                "NOTICE": 3,
+                "WARNING": 4,
+                "ERROR": 5,
+                "CRITICAL": 6,
+                "ALERT": 7,
+                "EMERGENCY": 8
+            },
+            "AlertMonitoringStartTime": 0,
+            "Plugin": "DEFERRED"
+        }
+    ]
 }

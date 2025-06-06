@@ -2,7 +2,7 @@
   <img src="ibm.png" alt="Logo" width="200"/>
 </div>
 
-# Data Insight Selfmon - ps-di-selfmon
+# Wifi Automations - AP count based on Severity
 
 ## Overview
 DataInsight is part of the SevOne NPM architecture. However, there is no OOTB monitoring of DI.
