@@ -116,145 +116,74 @@ def get_data_from_metrics(ipAddress,token,query):
 
 if __name__ == '__main__':
     try:
-        loop_count = 0
-        while True:
+        
+        
+        logger.info('-----------------------------------------------------------------------------------------------------------');
+        logger.info('Starting execution of application')
+        
+        
+        
+        #file_prefix = "/app/"
+        
+        file_prefix = ""
+        #configurationFile = "/opt/IBM/expert-labs/el-proj-templates/etc/config.json"
+        #keyFile = "/opt/IBM/expert-labs/el-proj-templates/env/key.txt"
+        configurationFile = file_prefix + "etc/config.json"
+        keyFile = file_prefix + "env/key.txt"
+        with open(keyFile,"r") as keyfile:
+            key=keyfile.read()
+        EncryptConfigurationFile(configurationFile,keyFile,"ApplianceDetails","List")
+        with open(configurationFile, "r") as f:
+            try:
+                config = json.load(f)
+            except json.decoder.JSONDecodeError as e:
+                logger.error(f"Error loading JSON data: {e}")
+                sys.exit(1)
 
-            logger.info('-----------------------------------------------------------------------------------------------------------');
-            logger.info('Starting execution of application')
-            loop_start = int(time.time())
-            loop_count += 1
-            logger.info("Started Collection (loop " + str(loop_count) + ")")
-            file_prefix = "/app/"
+        logger.info(config)
+
+
             
-            #file_prefix = ""
-            #configurationFile = "/opt/IBM/expert-labs/el-proj-templates/etc/config.json"
-            #keyFile = "/opt/IBM/expert-labs/el-proj-templates/env/key.txt"
-            configurationFile = file_prefix + "etc/config.json"
-            keyFile = file_prefix + "env/key.txt"
-            with open(keyFile,"r") as keyfile:
-                key=keyfile.read()
-            EncryptConfigurationFile(configurationFile,keyFile,"ApplianceDetails","List")
-            with open(configurationFile, "r") as f:
-                try:
-                    config = json.load(f)
-                except json.decoder.JSONDecodeError as e:
-                    logger.error(f"Error loading JSON data: {e}")
-                    loop_finish = time.time()                
-                    # go to sleep till next poll                    
-                    if go_to_sleep(loop_start, loop_finish,loop_count,config["interval"]):
-                        continue
-                    else:
-                        break
-
-            logger.info(config)
-
-
+        #Ingesting the metrics into SevOne Appliance
+        
+        ###### Check Master-Slave situation ######
+        
+        logger.info(f"Checking if host is PAS/HSA")
+        '''
+        
+        with open(f'{file_prefix}SevOne.masterslave.master') as f:
+            if f.read().rstrip() == '0':
+            
+                logger.critical('loop:' + str(loop_count) + ' Running on Secondary appliance ... Skipping loop increase...')
+                loop_finish = time.time()
+                # go to sleep till next poll
                 
-            #Ingesting the metrics into SevOne Appliance
-            
-            ###### Check Master-Slave situation ######
-            
-            logger.info(f"Checking if host is PAS/HSA")
-            '''
-            
-            with open(f'{file_prefix}SevOne.masterslave.master') as f:
-                if f.read().rstrip() == '0':
-                
-                    logger.critical('loop:' + str(loop_count) + ' Running on Secondary appliance ... Skipping loop increase...')
-                    loop_finish = time.time()
-                    # go to sleep till next poll
-                    
-                    if go_to_sleep(loop_start, loop_finish,loop_count,config["interval"]):
-                        continue
-                    else:
-                        break
-            '''
-            
-            logger.info(f"Host is PAS. Continuing...")
-            #Print appliance details
-            #SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key))
-            keyFile = file_prefix + "env/key.txt"
-            with open(keyFile,"r") as keyfile:
-                key=keyfile.read()
-            SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["UseSShKeys"])
-            logger.debug(f"Automation: {config['Automation'][0]}")
-            wifi_automation = WifiAutomations()
-            for automation in config['Automation']:
-                if automation["Enabled"] != 1:
-                    logger.info(f"Automation: {automation['Name']} - is disabled. Continuing with next automation")
+                if go_to_sleep(loop_start, loop_finish,loop_count,config["interval"]):
                     continue
-                logger.info(f"Automation: {automation['Name']} - is Enabled.")
-                wifi_automation.Automation(SevOne_appliance_obj,automation)
-
-      
-            '''
-            body = {"test":{}}
-
-            # Get all device groups under a particular device
-            for deviceName,object_dictionary in body.items():
-            
-                object_list= []
-                for objectName,objectDetails in object_dictionary.items(): # The ObjectNames are keys. 
-                    objectDictToBeIngested = {}
-                    objectType = objectDetails[0]
-                    timestamp = objectDetails[1]["timestamp"]["timestamp"]
-                    indicatorList = []
-                    for indicatorName, indicatorDetails in objectDetails[1]["timestamp"].items():
-                        if indicatorName == "timestamp":
-                            continue
-                        indicatorDict = {}
-                        indicatorDict = {
-                            "format":indicatorDetails[2],
-                            "name": indicatorName,
-                            "units": indicatorDetails[1],
-                            "value" : indicatorDetails[0]
-                        }
-                        indicatorList.append(indicatorDict)
-                    objectDictToBeIngested = {
-                        "automaticCreation": True,
-                        "description": "Created by DI SelfMon",
-                        "name": objectName,
-                        "pluginName": "DEFERRED",
-                        "timestamps": [
-                            {
-                            "indicators": indicatorList,
-                            "timestamp": timestamp
-                            }
-                        ],
-                        "type": objectType
-                    }
-                    object_list.append(objectDictToBeIngested)
-                diIPAddress = dataInsight["IPAddress"]
-                if (":" in dataInsight["IPAddress"]):
-                    diIPAddress,port = dataInsight["IPAddress"].split(":", 1)
-                result = SevOne_appliance_obj.ingest_dev_obj_ind(deviceName, diIPAddress,object_list)
-                if result==1:
-                    logger.error(f"Error ingesting data into SevOne.")
                 else:
-                    logger.debug(f"Result of ingestion: {result}")
-            '''
+                    break
+        '''
+        
+        logger.info(f"Host is PAS. Continuing...")
+        #Print appliance details
+        #SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key))
+        keyFile = file_prefix + "env/key.txt"
+        with open(keyFile,"r") as keyfile:
+            key=keyfile.read()
+        SevOne_appliance_obj = SevOneAppliance(config["ApplianceDetails"][0]["IPAddress"],config["ApplianceDetails"][0]["UserName"],DecryptPassword(config["ApplianceDetails"][0]["Password"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["sshUserName"],DecryptPassword(config["ApplianceDetails"][0]["sshPassword"]["EncryptedPwd"].encode('utf-8'),key),config["ApplianceDetails"][0]["UseSShKeys"])
+        logger.debug(f"Automation: {config['Automation'][0]}")
+        wifi_automation = WifiAutomations()
+        for automation in config['Automation']:
+            if automation["Enabled"] != 1:
+                logger.info(f"Automation: {automation['Name']} - is disabled. Continuing with next automation")
+                continue
+            logger.info(f"Automation: {automation['Name']} - is Enabled.")
+            wifi_automation.Automation(SevOne_appliance_obj,automation)
 
-            if config["interval"] == 0:
-                logger.info("Finished Collection (loop " + str(loop_count)+") in " + str(
-                    (int(time.time()) - int(loop_start))) + " seconds... No new loop will run since POLLING_INTERVAL or --interval was set to 0. Exiting...")
-                break
-            else:
-                loop_sleep = (int(config["interval"]) -
-                            (int(time.time()) - loop_start))
-                if (loop_sleep > 0):
-                    logger.info("Finished Collection (loop " + str(loop_count)+") in " + str(
-                        (int(time.time()) - int(loop_start))) + " seconds... New loop in "+str(int(config["interval"]) - int(int(time.time()) - int(loop_start)))+" seconds...")
-                    time.sleep(float(loop_sleep))
-                else:
-                    logger.warning("Finished Collection (loop " + str(loop_count)+") in " + str(
-                        (int(time.time()) - int(loop_start))) + " seconds... Interval Time (" + str(config["interval"]) + " seconds) exceeded!! Starting new loop immediately...")
 
-                if loop_count > 499:
-                    #Exit container. Container restarts
-                    exit(1)
 
-            del config
-            del SevOne_appliance_obj,wifi_automation
+        del config
+        del SevOne_appliance_obj,wifi_automation
 
 
         # Exit with 0 for container to not restart    

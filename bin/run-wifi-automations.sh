@@ -2,8 +2,11 @@ APP_NAME="APPNAMEREPLACE"
 IMAGE_NAME="CONTAINERIMAGEREPLACE:CONTAINERIMAGEVERSIONREPLACE"
 HOST_IP=${HOST_IP}
 
+podman pod create --name ps-addon-pod
+
 podman run -d \
   --name "$APP_NAME" \
+  --pod ps-addon--pod \
   --user 0:0 \
   --memory 801337k \
   --log-driver=json-file \

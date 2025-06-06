@@ -54,7 +54,7 @@ mkdir -p %{buildroot}/var/custom/ps-addon/%{appname}/log
 
 /bin/sed -i "s,APPNAMEREPLACE,%{appname},g" %{SOURCE0}/bin/run-wifi-automations.sh
 /bin/sed -i "s,CONTAINERIMAGEREPLACE,%{containerimage},g" %{SOURCE0}/bin/run-wifi-automations.sh
-#/bin/sed -i "s,CONTAINERIMAGEVERSIONREPLACE,%{commit},g" %{SOURCE0}/etc/cronjob.yml
+/bin/sed -i "s,CONTAINERIMAGEVERSIONREPLACE,%{commit},g" %{SOURCE0}/bin/run-wifi-automations.sh
 
 
 
@@ -118,7 +118,7 @@ else
 fi
 
 #chown -R %{appusername}:%{appusername} /var/custom/ps-addon/%{appname}
-chmod +x /var/custom/ps-addon/%{appname}/*.sh
+chmod +x /var/custom/ps-addon/%{appname}/bin/*.sh
 
 #if /usr/local/bin/kubectl get cronjob %{appname}  > /dev/null 2>&1; then
 #    echo "---   Deleting kubernetes cronjob %{appname}"
