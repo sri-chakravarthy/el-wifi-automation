@@ -124,9 +124,9 @@ if __name__ == '__main__':
             loop_start = int(time.time())
             loop_count += 1
             logger.info("Started Collection (loop " + str(loop_count) + ")")
-            #file_prefix = "/app/"
+            file_prefix = "/app/"
             
-            file_prefix = ""
+            #file_prefix = ""
             #configurationFile = "/opt/IBM/expert-labs/el-proj-templates/etc/config.json"
             #keyFile = "/opt/IBM/expert-labs/el-proj-templates/env/key.txt"
             configurationFile = file_prefix + "etc/config.json"

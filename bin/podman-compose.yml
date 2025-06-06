@@ -1,0 +1,22 @@
+version: '2.0'  # Use the latest version compatible with your Docker setup
+
+services:
+  APPNAMEREPLACE:
+    image: CONTAINERIMAGEREPLACE:CONTAINERIMAGEVERSIONREPLACE
+    container_name: APPNAMEREPLACE
+    user: "0:0"
+    mem_limit: 801337k
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "10"
+    volumes:
+      - /var/custom/ps-addon/APPNAMEREPLACE/etc:/app/etc
+      - /var/custom/ps-addon/APPNAMEREPLACE/env:/app/env
+      - /var/custom/ps-addon/APPNAMEREPLACE/bin:/app/bin
+      - /var/custom/ps-addon/log/APPNAMEREPLACE:/app/log
+      - /root/.ssh/id_rsa:/app/.ssh/id_rsa
+    environment:
+      - HOST_IP=${HOST_IP}
+    restart: "on-failure"

@@ -1,17 +1,26 @@
-# Base image: Python 3.7 on Alpine
+# Base image: Python 3.13 on Alpine
 FROM python:3.13-alpine
 
 # Install dependencies required for the application
 RUN apk add --no-cache bash
 
-# Copy application files
+# Set working directory
 WORKDIR /app
+
+# Copy requirements.txt first (to leverage Docker layer caching)
+COPY requirements.txt /app/
+
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application files
+RUN mkdir -p /app/src
 COPY src/* /app/src/
 RUN mkdir -p /app/etc
-
-# Install Python dependencies if required (uncomment if using requirements.txt)
-# COPY requirements.txt /app/
-# RUN pip install --no-cache-dir -r requirements.txt
+RUN mkdir -p /app/env
+COPY env/* /app/env/
+RUN mkdir -p /app/log
 
 # Set environment variables (optional)
 ENV PYTHONUNBUFFERED=1
