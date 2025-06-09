@@ -5,19 +5,21 @@
 # Wifi Automations - AP count based on Severity
 
 ## Overview
-DataInsight is part of the SevOne NPM architecture. However, there is no OOTB monitoring of DI.
-This add on provides a solution to monitor DI metrics and ingest them into the SevOne appliance.
+IBM SevOne NPM provides Wifi monitoring solutions out-of-the-box. This add-on provides additional automation features to enhance the Wifi Monitoring solution and provide customer with enhanced information and visualizations.
 
 ## Solution
-This project is an add-on for selfmon ofor Data Insight. 
-The planned solution will query prometheus on DataInsight for the configured metrics, and the data on prometheus will be ingested into SevOne.
 
-The main functionality of this add-on is, 
+### Device Count with Alerts under Device Groups
+In IBM SevOne NPM, devices can be grouped under multiple device groups.
+If there are any alerts on any of the devices, Data Insight provides a count of the number of alerts under each device group / device.
+However, OOTB, there is no current feature to detail the count of devices with Alerts and their max severity - under each device group.
 
--  To connect to the DataInsight configured.
--  To query prometheus for each of the metrics mentioned in the configuration file
--  Convert the queried data into Device- Object - Indicator format
--  Ingest the above data into SevOne cluster
+This automation
+- Counts the number of devices under the configured device group and its sub device groups
+- Determines the number of devices with Alerts [ and its maximum severity ] under the configured device group and its sub device groups
+- Creates a synthetic device - 'Severity-AP-Count' with IP - '9.9.9.9' - Both of which can be configured in the configuration file
+- Creates multiple objects under this synthetic device - One object per device Group being monitored.
+- Under each object, creates multiple indicators, which shows the total number of devices, number of devices with Alerts [ segregated according to Severity ]
 
 
 ## Table of Contents
@@ -33,8 +35,8 @@ The main functionality of this add-on is,
 Before you begin, ensure you have met the following requirements:
 
 1. SevOne V3 APIs credentials [ Tested for SevOne 6.7 and 6.8 ].
-2. DataInsight Prometheus credentials [ This is usually datainsight / datainsight ]
-3. Metrics that needs to be queried on Prometheus.
+2. Parent Device group Paths to be monitored
+
 
 
 ## Installation
@@ -42,12 +44,12 @@ Before you begin, ensure you have met the following requirements:
 To install this project, follow these steps:
 
 1. Create a directory ~/ps-di-selfmon on the cluster master of the SevOne cluster.
-2. Download the RPM  IBM-SevOne-NPM-PS-Plugin-ps-di-selfmon-<version>-1.el8.x86_64.rpm to the ~/ps-di-selfmon directory
+2. Download the RPM  ibm-el-wifi-automations-<version>-1.x86_64.rpm to the ~/ps-di-selfmon directory
 3. Install the RPM
     ```sh
-    yum localinstall IBM-SevOne-NPM-PS-Plugin-ps-di-selfmon-<version>-1.el8.x86_64.rpm
+    dnf install ibm-el-wifi-automations-<version>-1.x86_64.rpm
     ```
-4. Update `/opt/sevone-uc/ps-di-selfmon/config.json` to include your SevOne API credentials, DI Prometheus credentials other necessary configuration details.
+4. Update `/var/custom/ps-addon/el-wifi-automations/etc/config.json` to include your SevOne API credentials,
    You can use 'UseSShKeys = 1' to use sshKeys to login. If not, you can set 'sshPassword'
    ```json
     {
@@ -73,50 +75,45 @@ To install this project, follow these steps:
             "Type": "Prometheus",
     ```
      ```json
-            "Metrics": {
-                "<ObjectType1>": [
-                    {
-                        "query": "<prom Query1>",
-                        "indicatorName": "" # Optional
-                        "type": "GAUGE/COUNTER64",
-                        "units": "Number/Seconds/Bytes/.."
-                    },
-                    {
-                        "query": "<prom Query2>",
-                        "type": "GAUGE/COUNTER64",
-                        "units": "Number/Seconds/Bytes/.."
-                    },
-                    {
-                        "query": "<prom Query3>",
-                        "type": "GAUGE/COUNTER64",
-                        "units": "Number/Seconds/Bytes/.."
-                    }
-                ],
-                "<ObjectType2>": [
-                    {
-                        "query": "<prom Query4>",
-                        "type": "GAUGE/COUNTER64",
-                        "units": "Number/Seconds/Bytes/.."
-                    },
-                    {
-                        "query": "<prom Query5>",
-                        "type": "GAUGE/COUNTER64",
-                        "units": "Number/Seconds/Bytes/.."
-                    }
-                ]
-
-
-
+            {
+            "Name": "Severity-AP-Count", # Synthetic device name
+            "IPToBeCreated": "9.9.9.9", # Synthetic device IP
+            "Enabled": 1,
+            "ParentDeviceGroup": [
+                "All Device Groups/AP",
+                "All Device Groups/Wifi/WLCs"
+            ], # List of device groups to be monitored
+            "AlertSeverityDict": {
+                "CLEAR": 0,
+                "DEBUG": 1,
+                "INFO": 2,
+                "NOTICE": 3,
+                "WARNING": 4,
+                "ERROR": 5,
+                "CRITICAL": 6,
+                "ALERT": 7,
+                "EMERGENCY": 8
+            }, # Severity List, Need not be changed
+            "AlertMonitoringStartTime": 0,
+            "Plugin": "DEFERRED"
+        }
     ```
     ```json
-    "interval": 300, # To set the interval this add-on has to run
     "LogLevel": "INFO",
     "MaxLogFileSize": "10485760",
     ```
-5. Run the following command to install the add-on on the Cluster master and all the peers on the cluster
+5. Run the following command to run the add-on on the Cluster master 
     Install: 
     ```sh
-    /opt/sevone-uc/ps-di-selfmon/bin/run-di-selfmon.sh
+    /var/custom/ps-addon/el-wifi-automations/bin/run-wifi-automations.sh
+    ```
+
+6. To automate the add-on to run it at particular intervals, add the below entry into the cron
+    ```sh
+    /etc/config/cron.d/el-wifi-automations
+    ```
+    ```sh
+    */5 * * * * /var/custom/ps-addon/el-wifi-automations/bin/run-wifi-automations.sh > /var/custom/ps-addon/el-wifi-automations/log/el-wifi-automation.log 2> &1
     ```
 
 
@@ -125,14 +122,23 @@ To install this project, follow these steps:
 1. To run the add-on, execute the following command:
 
     ```sh
-    /opt/sevone-uc/ps-di-selfmon/bin/run-di-selfmon.sh
+    /var/custom/ps-addon/el-wifi-automations/bin/run-wifi-automations.sh
     ```
     This will run the add-on 
 
 2. To stop the add-on, execute the following command:
 
+    Remove the cron entry
+     ```sh
+    /etc/config/cron.d/el-wifi-automations
+    ```
     ```sh
-    docker-compose -f /opt/sevone-uc/ps-di-selfmon/docker-compose.yml down
+    */5 * * * * /var/custom/ps-addon/el-wifi-automations/bin/run-wifi-automations.sh > /var/custom/ps-addon/el-wifi-automations/log/el-wifi-automation.log 2> &1
+    ```
+
+    And run the below command to stop the pod and remove the container.
+    ```sh
+    /var/custom/ps-addon/el-wifi-automations/bin/stop-wifi-automations.sh
     ```
     This will stop the add-on
 
@@ -143,48 +149,24 @@ To verify if the application is running fine
 
 1. Check if the docker container is running
     ```sh
-    docker ps -f name=ps-di-selfmon
+    podman ps -f name=el-wifi-automations
+    ```
+    The container will be running only for the time the application is executing. The container exits once the add-on completes the execution.
+
+    To check when the container last exited, use the below command
+     ```sh
+    podman ps -a | grep el-wifi-automations
     ```
 
 2.  Check the log files at
     ```sh
-    /var/log/SevOne/ps-di-selfmon/ps-di-selfmon.log
+    /var/custom/ps-addon/el-wifi-automations/log/el-wifi-automation.log
     ```
 
-## Important Metrics that can be monitored
+3.  Check if the metrics are being ingested
 
-1. Pod Status
-    ```
-    pod_status: promquery - kube_pod_status_phase{phase=\"Running\"} 
-    pod_status = 0 : Pod is not running
-    pod_status = 1 : Pod is running
-    ```
-2. Node / WorkerNode Status
-    ```
-    node_status: promquery - kube_node_status_condition{condition=\"Ready\", status=\"true\"} 
-    node_status = 0 : Node is not Ready 
-    node_status = 1 : Node is  Ready
-    ```
-3. Disk, Memory Pressure on DI nodes / WorkerNodes
-    ```
-    disk_pressure: promquery - kube_node_status_condition{condition=\"DiskPressure\", status=\"true\"}
+    - Login to SevOne NPM  - Device Manager
+    - Check for device with IP : 9.9.9.9 [ or the value configured in config.json ]
+    - Review the Objects [ One object per device group ]
+    - Review the metrics under each object [ No of devices segregated based on Max Severity of the alerts it has ]
 
-    memory_pressure: promquery - kube_node_status_condition{condition=\"MemoryPressure\", status=\"true\"}
-
-    disk_pressure / memory_pressure  = 0 : Disk is OK / Memory is OK 
-    disk_pressure / memory_pressure  = 1 : Disk is not OK / Memory is not OK 
-    ```
-
-4. Deployment status
-    ```
-    Replicas Unavailable: promquery : kube_deployment_spec_replicas - kube_deployment_status_replicas_available
-    Replicas Unavailable = 0 : Deployment is OK. All Replicas are available
-    Replicas Unavailable != 0 : Deployment is not OK. Some replicas are unavailable. If the replicas are restarting, then this metric might become non-zero temporarily.
-    ```
-
-5. Certificate status
-    ```
-    Time to Expire in weeks: promquery : kube_deployment_spec_replicas - kube_deployment_status_replicas_available
-    Time to Expire in weeks > 46 : Certificate expire time is more than a year
-    Time to Expire in weeks < 46 : Certificate will expire within a year.
-    ```
