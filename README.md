@@ -110,10 +110,21 @@ To install this project, follow these steps:
 
 6. To automate the add-on to run it at particular intervals, add the below entry into the cron
     ```sh
-    /etc/config/cron.d/el-wifi-automations
+    /etc/cron.d/el-wifi-automations
     ```
     ```sh
-    */5 * * * * /var/custom/ps-addon/el-wifi-automations/bin/run-wifi-automations.sh > /var/custom/ps-addon/el-wifi-automations/log/el-wifi-automation.log 2> &1
+    # Global variables
+    SHELL=/bin/bash
+    PATH=/sbin:/bin:/usr/sbin:/usr/bin
+    MAILTO=""
+    HOME=/
+    PHPRC=/config/php.d/php-cli.ini
+    SNMPCONFPATH=/config/snmp
+    MYSQL_HOME=/config
+    */5 * * * * root /bin/bash /var/custom/ps-addon/el-wifi-automations/bin/run-wifi-automations.sh >> /var/custom/ps-addon/el-wifi-automations/log/el-wifi-automation.log 2>&1
+    ```
+    ```sh
+    chmod 644 /etc/cron.d/el-wifi-automations
     ```
 
 
@@ -130,17 +141,31 @@ To install this project, follow these steps:
 
     Remove the cron entry
      ```sh
-    /etc/config/cron.d/el-wifi-automations
+    /etc/cron.d/el-wifi-automations
     ```
     ```sh
-    */5 * * * * /var/custom/ps-addon/el-wifi-automations/bin/run-wifi-automations.sh > /var/custom/ps-addon/el-wifi-automations/log/el-wifi-automation.log 2> &1
+    # Global variables
+    SHELL=/bin/bash
+    PATH=/sbin:/bin:/usr/sbin:/usr/bin
+    MAILTO=""
+    HOME=/
+    PHPRC=/config/php.d/php-cli.ini
+    SNMPCONFPATH=/config/snmp
+    MYSQL_HOME=/config
+    */5 * * * * /bin/bash /var/custom/ps-addon/el-wifi-automations/bin/run-wifi-automations.sh >> /var/custom/ps-addon/el-wifi-automations/log/el-wifi-automation.log 2>&1
     ```
+
 
     And run the below command to stop the pod and remove the container.
     ```sh
     /var/custom/ps-addon/el-wifi-automations/bin/stop-wifi-automations.sh
     ```
     This will stop the add-on
+
+3. To Verify when the cron last ran the job, please use the below command
+   ```sh
+    grep el-wifi-automations /var/log/cron
+    ```
 
 
 ## Verification
@@ -153,10 +178,6 @@ To verify if the application is running fine
     ```
     The container will be running only for the time the application is executing. The container exits once the add-on completes the execution.
 
-    To check when the container last exited, use the below command
-     ```sh
-    podman ps -a | grep el-wifi-automations
-    ```
 
 2.  Check the log files at
     ```sh

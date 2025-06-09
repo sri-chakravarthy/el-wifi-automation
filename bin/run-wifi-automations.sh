@@ -1,10 +1,11 @@
+#!/bin/bash
 APP_NAME="APPNAMEREPLACE"
 IMAGE_NAME="CONTAINERIMAGEREPLACE:CONTAINERIMAGEVERSIONREPLACE"
 HOST_IP=${HOST_IP}
 
 
 
-podman run -rm \
+/usr/bin/podman run --rm \
   --name "$APP_NAME" \
   --user 0:0 \
   --memory 801337k \
