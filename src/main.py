@@ -123,9 +123,9 @@ if __name__ == '__main__':
         
         
         
-        #file_prefix = "/app/"
+        file_prefix = "/app/"
         
-        file_prefix = ""
+        #file_prefix = ""
         #configurationFile = "/opt/IBM/expert-labs/el-proj-templates/etc/config.json"
         #keyFile = "/opt/IBM/expert-labs/el-proj-templates/env/key.txt"
         configurationFile = file_prefix + "etc/config.json"

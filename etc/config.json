@@ -78,7 +78,10 @@
             "Name": "Severity-AP-Count",
             "IPToBeCreated": "9.9.9.9",
             "Enabled": 1,
-            "ParentDeviceGroup": "All Device Groups/AP",
+            "ParentDeviceGroup": [
+                "All Device Groups/AP",
+                "All Device Groups/Wifi/WLCs"
+            ],
             "AlertSeverityDict": {
                 "CLEAR": 0,
                 "DEBUG": 1,

@@ -15,8 +15,8 @@ from xml.dom import minidom
 
 class WifiAutomations:
 
-    def parse_groups(self,data):
-        result = {}
+    def parse_groups(self,data,result={}):
+        #result = {}
         
         def traverse(children):
             for child in children:
@@ -49,26 +49,28 @@ class WifiAutomations:
             self.severity_ap_count(SevOne_appliance_obj,automationDict)
 
     def severity_ap_count(self,SevOne_appliance_obj,automationDict):
-        parentDeviceGroupPath=automationDict['ParentDeviceGroup']
-        logger.info(f"Device Group to check: {automationDict['ParentDeviceGroup']}")
+        deviceGroupDict = {}
+        for parentDeviceGroupPath in automationDict['ParentDeviceGroup']:
+            #parentDeviceGroupPath=automationDict['ParentDeviceGroup']
+            logger.info(f"Device Group to check: {parentDeviceGroupPath}")
 
-        # Getting all sub device groups and devices in each device group
-        device_groups = self.get_all_device_groups(SevOne_appliance_obj,parentDeviceGroupPath)
-        logger.debug(f"Device Groups: {device_groups}")
-        # Create a dictionary as below
-        #  {
-        #       <deviceGroupName>:{
-        #               "NoofDevices:<Value>,
-        #               "DeviceGroupID": <value>,
-        #               
-        #               }
-        #  }
-        deviceGroupDict = self.parse_groups(device_groups)
+            # Getting all sub device groups and devices in each device group
 
-        # Get LastDataPoint of all devices under the parent device group using API call
-   
-       
-        logger.info(f"Device Groups discovered: {deviceGroupDict}")
+            device_groups = self.get_all_device_groups(SevOne_appliance_obj,parentDeviceGroupPath)
+            logger.debug(f"Device Groups: {device_groups}")
+            # Create a dictionary as below
+            #  {
+            #       <deviceGroupName>:{
+            #               "NoofDevices:<Value>,
+            #               "DeviceGroupID": <value>,
+            #               
+            #               }
+            #  }
+            deviceGroupDict = self.parse_groups(device_groups,deviceGroupDict)
+
+            # Get LastDataPoint of all devices under the parent device group using API call       
+            logger.info(f"Device Groups discovered: {deviceGroupDict}")
+
         deviceGroupIdList = list(deviceGroupDict.keys())
         logger.info(f"Device Group Id list: {deviceGroupIdList}")
 
